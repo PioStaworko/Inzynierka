@@ -46,5 +46,15 @@ class ExpensesState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Usunęliśmy 'factory ExpensesState.sample()' - nie jest już potrzebne
+  Future<void> deleteExpense(int expenseId) async {
+    // 1. Usuń z bazy danych
+    await isar.writeTxn(() async {
+      await isar.expenses.delete(expenseId);
+    });
+
+    // 2. Zaktualizuj stan lokalny (przeładuj z bazy)
+    _loadExpenses();
+    notifyListeners();
+  }
+  // ======================================
 }

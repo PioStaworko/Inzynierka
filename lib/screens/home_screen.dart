@@ -10,6 +10,7 @@ import '../widgets/pie_chart_widget.dart';
 import '../screens/add_expense_screen.dart';
 import '../screens/add_income_screen.dart';
 import '../screens/add_recurring_expense_screen.dart'; // <--- DODAJ IMPORT
+import '../widgets/app_drawer.dart'; // <-- Nasz nowy widżet szuflady
 
 class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key});
@@ -95,6 +96,7 @@ class MyHomePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mój Budżet')), // Zmieniony tytuł
+      drawer: const AppDrawer(),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -193,18 +195,44 @@ class MyHomePage extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final e = expenseState.recent[index];
                           final color = categoryColors[e.category] ?? Colors.grey;
-                          return ListTile(
-                            leading: CircleAvatar(
-                                backgroundColor: color,
-                                child: Text(e.category[0])),
-                            title: Text(e.title),
-                            // <--- ZMIANA: Lepsze formatowanie daty
-                            subtitle: Text(
-                                '${DateFormat('dd.MM.yyyy').format(e.date)} • ${e.category}'),
-                            trailing: Text('${e.amount.toStringAsFixed(2)} zł',
-                                style:
-                                    const TextStyle(fontWeight: FontWeight.bold)),
+
+                          // === NOWY KOD: Widżet Dismissible ===
+                          return Dismissible(
+                            key: ValueKey(e.id), // Klucz jest niezbędny! Używamy ID z bazy.
+                            direction: DismissDirection.endToStart, // Przesuwanie tylko w lewo
+                            background: Container(
+                              color: Colors.red.shade700,
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 20),
+                              child: const Icon(Icons.delete, color: Colors.white),
+                            ),
+                            onDismissed: (direction) {
+                              // Wywołujemy usuwanie z providera
+                              context.read<ExpensesState>().deleteExpense(e.id);
+
+                              // Pokaż potwierdzenie
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Usunięto "${e.title}"'),
+                                  action: SnackBarAction(label: 'COFNIJ', onPressed: () {
+                                    // TODO: Cofanie usunięcia (bardziej zaawansowane)
+                                  }),
+                                ),
+                              );
+                            },
+                            child: ListTile( // <--- Nasz stary ListTile jest teraz 'dzieckiem'
+                              leading: CircleAvatar(
+                                  backgroundColor: color,
+                                  child: Text(e.category[0])),
+                              title: Text(e.title),
+                              subtitle: Text(
+                                  '${DateFormat('dd.MM.yyyy').format(e.date)} • ${e.category}'),
+                              trailing: Text('${e.amount.toStringAsFixed(2)} zł',
+                                  style:
+                                      const TextStyle(fontWeight: FontWeight.bold)),
+                            ),
                           );
+                          // ===================================
                         },
                       ),
                     ),
