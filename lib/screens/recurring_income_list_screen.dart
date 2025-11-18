@@ -3,25 +3,24 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../providers/recurring_expense_provider.dart';
-import '../screens/add_recurring_expense_screen.dart';
+import '../providers/recurring_income_provider.dart';
+import '../screens/add_recurring_income_screen.dart';
 
-class RecurringExpensesListScreen extends StatelessWidget {
-  const RecurringExpensesListScreen({super.key});
-
+class RecurringIncomeListScreen extends StatelessWidget {
+  const RecurringIncomeListScreen({super.key});
   @override
   Widget build(BuildContext context) {
     // Nasłuchujemy zmian w providerze
-    final provider = context.watch<RecurringExpenseProvider>();
+    final provider = context.watch<RecurringIncomeProvider>();
     final templates = provider.allTemplates;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wydatki Cykliczne'),
+        title: const Text('Przychody stałe'),
       ),
       body: templates.isEmpty
           ? const Center(
-              child: Text('Nie masz jeszcze żadnych szablonów wydatków cyklicznych.'),
+              child: Text('Nie masz jeszcze żadnych szablonów przychodów stałych'),
             )
           : ListView.builder(
               itemCount: templates.length,
@@ -40,8 +39,8 @@ class RecurringExpensesListScreen extends StatelessWidget {
                   onDismissed: (direction) {
                     // Wywołujemy usuwanie z providera
                     context
-                        .read<RecurringExpenseProvider>()
-                        .deleteRecurringExpense(template.id);
+                        .read<RecurringIncomeProvider>()
+                        .deleteRecurringIncome(template.id);
                   },
                   child: ListTile(
                     onTap: () {
@@ -49,7 +48,7 @@ class RecurringExpensesListScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => AddRecurringExpenseScreen(expenseToEdit: template), // Przekazujemy obiekt 'template'
+                          builder: (_) => AddRecurringIncomeScreen(incomeToEdit: template), // Przekazujemy obiekt 'template'
                         ),
                       );
                     },

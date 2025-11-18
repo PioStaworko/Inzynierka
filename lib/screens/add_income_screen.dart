@@ -1,7 +1,7 @@
 // lib/screens/add_income_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Pamiętaj, aby dodać 'intl' do pubspec.yaml
+import 'package:intl/intl.dart'; 
 import 'package:provider/provider.dart';
 
 import '../models/income_model.dart';
@@ -90,7 +90,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dodaj nowy wydatek'),
+        title: const Text('Dodaj nowy przychód'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -163,7 +163,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
               ElevatedButton.icon(
                 onPressed: _submitData,
                 icon: const Icon(Icons.save),
-                label: const Text('Zapisz wydatek'),
+                label: const Text('Zapisz przychód'),
               ),
             ],
           ),

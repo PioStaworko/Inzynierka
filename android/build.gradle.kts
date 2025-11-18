@@ -22,3 +22,27 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+
+subprojects {
+    // Definiujemy logikę naprawczą jako funkcję (zmienną), aby jej nie dublować
+    val configureNamespace = {
+        val android = extensions.findByName("android")
+        if (android != null) {
+            val extension = android as? com.android.build.gradle.BaseExtension
+            if (extension != null && extension.namespace == null) {
+                extension.namespace = project.group.toString()
+            }
+        }
+    }
+
+    // Sprawdzamy stan projektu
+    if (state.executed) {
+        // Jeśli projekt już oceniony - wykonaj od razu
+        configureNamespace()
+    } else {
+        // Jeśli nie - poczekaj na koniec oceny
+        afterEvaluate {
+            configureNamespace()
+        }
+    }
+}

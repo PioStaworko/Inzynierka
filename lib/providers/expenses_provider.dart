@@ -56,5 +56,14 @@ class ExpensesState extends ChangeNotifier {
     _loadExpenses();
     notifyListeners();
   }
+
+  Future<void> updateExpense(Expense updatedExpense) async {  
+    await isar.writeTxn(() async {
+      await isar.expenses.put(updatedExpense);
+    });
+    
+    _loadExpenses();
+    notifyListeners();
+  }
   // ======================================
 }

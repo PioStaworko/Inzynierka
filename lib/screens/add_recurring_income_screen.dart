@@ -3,19 +3,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../models/recurring_expense_model.dart';
-import '../providers/recurring_expense_provider.dart';
+import '../models/recurring_income_model.dart';
+import '../providers/recurring_income_provider.dart';
 
-class AddRecurringExpenseScreen extends StatefulWidget {
-  final RecurringExpense? expenseToEdit; // Opcjonalny parametr do edycji
+class AddRecurringIncomeScreen extends StatefulWidget {
+  final RecurringIncome? incomeToEdit; // Opcjonalny parametr do edycji
 
-  const AddRecurringExpenseScreen({super.key, this.expenseToEdit});
+  const AddRecurringIncomeScreen({super.key, this.incomeToEdit});
 
   @override
-  State<AddRecurringExpenseScreen> createState() => _AddRecurringExpenseScreenState();
+  State<AddRecurringIncomeScreen> createState() => _AddRecurringIncomeScreenState();
 }
 
-class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
+class _AddRecurringIncomeScreenState extends State<AddRecurringIncomeScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
   late TextEditingController _amountController;
@@ -29,13 +29,13 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
   void initState() {
     super.initState();
     // LOGIKA INICJALIZACJI
-    if (widget.expenseToEdit != null) {
-      final e = widget.expenseToEdit!;
-      _titleController = TextEditingController(text: e.title);
-      _amountController = TextEditingController(text: e.amount.toString());
-      _selectedDate = e.nextDueDate;
-      _selectedCategory = e.category;
-      _selectedFrequency = e.frequency;
+    if (widget.incomeToEdit != null) {
+      final i = widget.incomeToEdit!;
+      _titleController = TextEditingController(text: i.title);
+      _amountController = TextEditingController(text: i.amount.toString());
+      _selectedDate = i.nextDueDate;
+      _selectedCategory = i.source;
+      _selectedFrequency = i.frequency;
     } else {
       _titleController = TextEditingController();
       _amountController = TextEditingController();
@@ -55,7 +55,7 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? now,
-      firstDate: now,
+      firstDate: DateTime(now.year, now.month - 6, now.day),
       lastDate: DateTime(now.year + 5),
     );
     if (pickedDate != null) {
@@ -69,21 +69,21 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
     final enteredAmount = double.tryParse(_amountController.text);
     if (enteredAmount == null || enteredAmount <= 0) return;
 
-    final recurringExpense = RecurringExpense(
+    final recurringIncome = RecurringIncome(
       title: _titleController.text,
       amount: enteredAmount,
-      category: _selectedCategory,
+      source: _selectedCategory,
       frequency: _selectedFrequency,
       nextDueDate: _selectedDate!,
     );
 
-    if (widget.expenseToEdit != null) {
+    if (widget.incomeToEdit != null) {
       // Tryb EDYCJI: Przepisujemy ID
-      recurringExpense.id = widget.expenseToEdit!.id;
-      await context.read<RecurringExpenseProvider>().updateRecurringExpense(recurringExpense);
+      recurringIncome.id = widget.incomeToEdit!.id;
+      await context.read<RecurringIncomeProvider>().updateRecurringIncome(recurringIncome);
     } else {
       // Tryb DODAWANIA
-      await context.read<RecurringExpenseProvider>().addRecurringExpense(recurringExpense);
+      await context.read<RecurringIncomeProvider>().addRecurringIncome(recurringIncome);
     }
 
     if (mounted) Navigator.of(context).pop();
@@ -91,11 +91,11 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.expenseToEdit != null;
+    final isEditing = widget.incomeToEdit != null;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edytuj szablon' : 'Dodaj wydatek cykliczny'),
+        title: Text(isEditing ? 'Edytuj szablon' : 'Dodaj przychód cykliczny'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -117,7 +117,7 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
-                decoration: const InputDecoration(labelText: 'Kategoria'),
+                decoration: const InputDecoration(labelText: 'Źródło'),
                 items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                 onChanged: (val) => setState(() => _selectedCategory = val!),
               ),

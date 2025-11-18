@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import '../screens/recurring_expenses_list_screen.dart'; // Stworzymy ten plik za chwilę
+import '../screens/recurring_income_list_screen.dart';
+import '../screens/settings_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -47,6 +49,33 @@ class AppDrawer extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (ctx) => const RecurringExpensesListScreen(),
                 ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.replay),
+            title: const Text('Przychody Stałe'),
+            onTap: () {
+              // 1. Zamknij szufladę
+              Navigator.of(context).pop();
+              // 2. Przejdź do nowego ekranu
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => const RecurringIncomeListScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Ustawienia'),
+            onTap: () {
+              // 1. Zamknij szufladę
+              Navigator.of(context).pop();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (ctx) => const SettingsScreen()),
               );
             },
           ),

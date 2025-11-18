@@ -6,54 +6,81 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'models/expense_model.dart';
-import 'models/income_model.dart'; // Import nowego modelu
+import 'models/income_model.dart';
 import 'models/recurring_expense_model.dart';
+import 'models/recurring_income_model.dart'; // <--- 1. DODAJ TEN IMPORT
 import 'providers/expenses_provider.dart';
 import 'providers/income_provider.dart';
-import 'providers/recurring_expense_provider.dart'; // Import nowego providera
+import 'providers/recurring_expense_provider.dart';
+import 'providers/recurring_income_provider.dart'; // <--- 2. DODAJ TEN IMPORT
+import 'providers/theme_provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/settings_screen.dart';
 
-// main() musi być teraz asynchroniczne, aby poczekać na otwarcie bazy
+
 void main() async {
-  // Musimy to dodać, aby móc wywoływać kod natywny przed runApp()
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Otwieramy instancję Isar
   final dir = await getApplicationDocumentsDirectory();
   final isar = await Isar.open(
-    [ExpenseSchema, 
-  IncomeSchema,
-  RecurringExpenseSchema], 
-  directory: dir.path
+    [
+      ExpenseSchema,
+      IncomeSchema,
+      RecurringExpenseSchema,
+      RecurringIncomeSchema // <--- 3. DODAJ SCHEMAT DO BAZY
+    ],
+    directory: dir.path,
   );
 
-  runApp(MyApp(isar: isar)); // Przekazujemy instancję bazy do aplikacji
+  runApp(MyApp(isar: isar));
 }
 
 class MyApp extends StatelessWidget {
-  // Przechowujemy instancję Isar
   final Isar isar;
 
-  const MyApp({
-    super.key,
-    required this.isar,
-  });
+  const MyApp({super.key, required this.isar});
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider( // <--- Używamy MultiProvider
+    return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ExpensesState(isar)),
         ChangeNotifierProvider(create: (_) => IncomeProvider(isar)),
-        ChangeNotifierProvider(create: (_) => RecurringExpenseProvider(isar)), // <-- Nowy provider
+        ChangeNotifierProvider(create: (_) => RecurringExpenseProvider(isar)),
+        ChangeNotifierProvider(create: (_) => RecurringIncomeProvider(isar)),
+        // 3. ZAREJESTRUJ THEME PROVIDER:
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: 'Savings App',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-          useMaterial3: true,
-        ),
-        home: const MyHomePage(),
+      // 4. UŻYJ CONSUMER, ABY NASŁUCHIWAĆ ZMIAN MOTYWU:
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Savings App',
+            
+            // Konfiguracja jasnego motywu
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color.fromARGB(255, 1, 114, 44),
+                brightness: Brightness.light,
+              ),
+              useMaterial3: true,
+            ),
+            
+            // Konfiguracja ciemnego motywu
+            darkTheme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color.fromARGB(255, 1, 114, 44),
+                brightness: Brightness.dark, // To kluczowa różnica
+              ),
+              useMaterial3: true,
+            ),
+            
+            // To mówi aplikacji, którego użyć
+            themeMode: themeProvider.themeMode, 
+            
+            home: const MyHomePage(),
+          );
+        },
       ),
     );
   }
