@@ -61,7 +61,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? now,
-      firstDate: firstDate,
+      firstDate: DateTime(now.year, now.month - 6, now.day),
       lastDate: now,
     );
     if (pickedDate != null) {

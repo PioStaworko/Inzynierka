@@ -22,8 +22,50 @@ import '../screens/add_recurring_expense_screen.dart';
 import '../screens/add_recurring_income_screen.dart';
 import '../screens/scan_receipt_screen.dart';
 
-class MyHomePage extends StatelessWidget {
+enum TimeRange { all, year, month, week, day }
+
+class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  TimeRange _selectedRange = TimeRange.all;
+
+  DateTime? _rangeStart(TimeRange range) {
+    final now = DateTime.now();
+    switch (range) {
+      case TimeRange.all:
+        return null;
+      case TimeRange.year:
+        return DateTime(now.year - 1, now.month, now.day);
+      case TimeRange.month:
+        return DateTime(now.year, now.month - 1, now.day);
+      case TimeRange.week:
+        return now.subtract(const Duration(days: 7));
+      case TimeRange.day:
+        return now.subtract(const Duration(days: 1));
+    }
+  }
+
+  Map<String, double> _computeTotalsForRange(ExpensesState expenseState, TimeRange range) {
+    final start = _rangeStart(range);
+    final map = <String, double>{};
+    for (final e in expenseState.recent) {
+      if (start != null && e.date.isBefore(start)) continue;
+
+      if (e.items != null && e.items!.isNotEmpty) {
+        for (final item in e.items!) {
+          map[item.category] = (map[item.category] ?? 0) + item.amount;
+        }
+      } else {
+        map[e.category] = (map[e.category] ?? 0) + e.amount;
+      }
+    }
+    return map;
+  }
 
   // <--- ZMIANA: USUNIĘTO static const categoryColors.
   // Nie potrzebujemy już sztywnej mapy, bo kolory są w bazie danych.
@@ -93,7 +135,7 @@ class MyHomePage extends StatelessWidget {
     // <--- ZMIANA: Pobieramy CategoryProvider, aby mieć dostęp do kolorów
     final categoryProvider = context.watch<CategoryProvider>(); 
 
-    final totals = expenseState.totalsByCategory;
+    final totals = _computeTotalsForRange(expenseState, _selectedRange);
     final totalExpenses = totals.values.fold(0.0, (sum, item) => sum + item);
     final totalIncomes = incomeState.totalIncome;
     final balance = totalIncomes - totalExpenses;
@@ -164,6 +206,31 @@ class MyHomePage extends StatelessWidget {
                       child: Column(
                         children: [
                           const Text('Koszty według kategorii', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 8),
+                          // Time range selector
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('Zakres: '),
+                              const SizedBox(width: 8),
+                              DropdownButton<TimeRange>(
+                                value: _selectedRange,
+                                items: const [
+                                  DropdownMenuItem(value: TimeRange.all, child: Text('Wszystkie')),
+                                  DropdownMenuItem(value: TimeRange.year, child: Text('Rok')),
+                                  DropdownMenuItem(value: TimeRange.month, child: Text('Miesiąc')),
+                                  DropdownMenuItem(value: TimeRange.week, child: Text('Tydzień')),
+                                  DropdownMenuItem(value: TimeRange.day, child: Text('Dzień')),
+                                ],
+                                onChanged: (v) {
+                                  if (v == null) return;
+                                  setState(() {
+                                    _selectedRange = v;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 12),
                           SizedBox(
                             height: 200,
