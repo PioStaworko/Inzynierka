@@ -17,6 +17,9 @@ dependencies:
   isar_flutter_libs: ^3.1.0+1 # Zawiera natywne biblioteki dla platform
   path_provider: ^2.0.0
   shared_preferences: ^2.2.0
+  image_picker: ^1.2.1
+  image_cropper: ^11.0.0
+  google_mlkit_text_recognition: ^0.15.0
   
 
 dev_dependencies:

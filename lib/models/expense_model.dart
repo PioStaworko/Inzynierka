@@ -2,25 +2,35 @@
 
 import 'package:isar/isar.dart';
 
-part 'expense_model.g.dart'; // Ta linia zostanie wygenerowana
+part 'expense_model.g.dart';
 
-@collection // Mówi Isar, że to jest model bazy danych
+@embedded
+class ExpenseItem {
+  String? name;       // Nazwa edytowalna, np. "Mleko"
+  String? rawId;      // Oryginalny tekst z paragonu, np. "MLEKO 3.2 UHT"
+  double amount = 0.0;
+  String category = 'Other'; // Kategoria tego konkretnego produktu
+}
+
+@collection
 class Expense {
-  Id id = Isar.autoIncrement; // Klucz główny dla bazy danych
+  Id id = Isar.autoIncrement;
 
-  final String title;
-  final double amount;
+  final String title;     // np. "Zakupy Biedronka"
+  final double amount;    // Suma całkowita paragonu
+  final String category;  // Kategoria główna paragonu (np. "Zakupy")
 
-  @Index() // Tworzy indeks dla kategorii - przyspieszy filtrowanie
-  final String category;
-
-  @Index() // Tworzy indeks dla daty
+  @Index()
   final DateTime date;
+
+  // Lista pozycji na paragonie. Może być null dla zwykłych wydatków.
+  List<ExpenseItem>? items;
 
   Expense({
     required this.title,
     required this.amount,
     required this.category,
     required this.date,
+    this.items,
   });
 }

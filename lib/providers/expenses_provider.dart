@@ -26,8 +26,18 @@ class ExpensesState extends ChangeNotifier {
 
   Map<String, double> get totalsByCategory {
     final map = <String, double>{};
+    //jeśli paragon ma itemy, sumujemy je po kategoriach itemów
+    //jeśli nie ma to dodajemy jako oddzielną kategorię.
     for (var e in _expenses) {
-      map[e.category] = (map[e.category] ?? 0) + e.amount;
+      if (e.items != null && e.items!.isNotEmpty) {
+        for (var item in e.items!) {
+          map[item.category] = (map[item.category] ?? 0) + item.amount;
+        }
+      } 
+      
+      else {
+        map[e.category] = (map[e.category] ?? 0) + e.amount;
+      }
     }
     return map;
   }

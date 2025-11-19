@@ -6,28 +6,27 @@ import 'package:intl/intl.dart';
 
 import '../providers/expenses_provider.dart';
 import '../providers/income_provider.dart';
+import '../providers/category_provider.dart'; // <--- ZMIANA: Dodano import
 
 import '../models/expense_model.dart';
 import '../models/income_model.dart';
+import '../models/category_model.dart'; // <--- ZMIANA: Dodano import (dla CategoryType)
 
 import '../widgets/pie_chart_widget.dart';
-import '../widgets/monthly_bar_chart.dart'; // <--- 1. DODAJ TEN IMPORT
+import '../widgets/monthly_bar_chart.dart';
 import '../widgets/app_drawer.dart';
 
 import '../screens/add_expense_screen.dart';
 import '../screens/add_income_screen.dart';
 import '../screens/add_recurring_expense_screen.dart';
 import '../screens/add_recurring_income_screen.dart';
+import '../screens/scan_receipt_screen.dart';
 
 class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key});
 
-  static const Map<String, Color> categoryColors = {
-    'Food': Colors.deepOrange,
-    'Transport': Colors.blue,
-    'Entertainment': Colors.purple,
-    'Other': Colors.green,
-  };
+  // <--- ZMIANA: USUNIĘTO static const categoryColors.
+  // Nie potrzebujemy już sztywnej mapy, bo kolory są w bazie danych.
 
   void _showAddOptions(BuildContext context) {
     showModalBottomSheet(
@@ -38,6 +37,16 @@ class MyHomePage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              ListTile(
+                leading: const Icon(Icons.document_scanner, color: Colors.blue), // Ikona skanera
+                title: const Text('Skanuj Paragon (OCR)'),
+                subtitle: const Text('Automatyczne dodawanie pozycji'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanReceiptScreen()));
+                },
+              ),
+              const Divider(),
               ListTile(
                 leading: const Icon(Icons.remove, color: Colors.red),
                 title: const Text('Dodaj wydatek'),
@@ -62,7 +71,7 @@ class MyHomePage extends StatelessWidget {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const AddRecurringExpenseScreen()));
                 },
               ),
-              ListTile(
+               ListTile(
                 leading: const Icon(Icons.replay, color: Colors.green),
                 title: const Text('Dodaj przychód cykliczny'),
                 onTap: () {
@@ -81,6 +90,8 @@ class MyHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final expenseState = context.watch<ExpensesState>();
     final incomeState = context.watch<IncomeProvider>();
+    // <--- ZMIANA: Pobieramy CategoryProvider, aby mieć dostęp do kolorów
+    final categoryProvider = context.watch<CategoryProvider>(); 
 
     final totals = expenseState.totalsByCategory;
     final totalExpenses = totals.values.fold(0.0, (sum, item) => sum + item);
@@ -102,7 +113,7 @@ class MyHomePage extends StatelessWidget {
         padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
-            // Karta Salda (Zostawiamy ją na górze, zawsze widoczną)
+            // Karta Salda
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -135,12 +146,10 @@ class MyHomePage extends StatelessWidget {
             
             const SizedBox(height: 12),
 
-            // === ZMIANA STRUKTURY: Expanded + ListView ===
-            // Dzięki temu wszystko poniżej salda będzie się przewijać
             Expanded(
               child: ListView(
                 children: [
-                  // <--- 2. TU WSTAWIAMY NOWY WYKRES SŁUPKOWY
+                  // WYKRES SŁUPKOWY
                   MonthlyBarChart(
                     expenses: expenseState.recent,
                     incomes: incomeState.allIncomes,
@@ -148,7 +157,7 @@ class MyHomePage extends StatelessWidget {
                   
                   const SizedBox(height: 12),
 
-                  // Stary Wykres Kołowy
+                  // WYKRES KOŁOWY (Kategorie wydatków)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
@@ -161,17 +170,27 @@ class MyHomePage extends StatelessWidget {
                             child: Center(
                               child: PieChartWidget(
                                 data: totals,
-                                colors: MyHomePage.categoryColors,
+                                // <--- ZMIANA: Przekazujemy pustą mapę lub mapujemy kolory tutaj.
+                                // Ale PieChartWidget oczekuje Map<String, Color>.
+                                // Najprościej jest zbudować tę mapę dynamicznie:
+                                colors: Map.fromEntries(
+                                  totals.keys.map((k) => MapEntry(
+                                    k, 
+                                    categoryProvider.getColorFor(k, CategoryType.expense)
+                                  ))
+                                ),
                                 size: 160,
                               ),
                             ),
                           ),
                           const SizedBox(height: 8),
+                          // CHIPY (LEGENDA)
                           Wrap(
                             spacing: 8,
                             runSpacing: 4,
                             children: totals.keys.map((k) {
-                              final c = categoryColors[k] ?? Colors.grey;
+                              // <--- ZMIANA: Pobieramy kolor z Providera, zamiast ze stałej mapy
+                              final c = categoryProvider.getColorFor(k, CategoryType.expense);
                               return Chip(
                                 avatar: CircleAvatar(backgroundColor: c),
                                 label: Text('$k — ${totals[k]!.toStringAsFixed(2)} zł'),
@@ -185,8 +204,7 @@ class MyHomePage extends StatelessWidget {
 
                   const SizedBox(height: 12),
 
-                  // === LISTA TRANSAKCJI (WSPÓLNA) ===
-                  // Zauważ zmiany: shrinkWrap: true i NeverScrollableScrollPhysics
+                  // LISTA TRANSAKCJI
                   Card(
                     child: Column(
                       children: [
@@ -194,11 +212,10 @@ class MyHomePage extends StatelessWidget {
                           title: Text('Ostatnie transakcje', style: TextStyle(fontWeight: FontWeight.w600)),
                         ),
                         const Divider(height: 0),
-                        // Zamiast Expanded używamy ListView z shrinkWrap, bo jesteśmy już wewnątrz innego ListView
                         ListView.separated(
-                          shrinkWrap: true, // <--- WAŻNE: Pozwala liście zająć tylko tyle miejsca ile potrzebuje
-                          physics: const NeverScrollableScrollPhysics(), // <--- WAŻNE: Wyłącza przewijanie tej wewnętrznej listy (przewija się cała strona)
-                          itemCount: allTransactions.length > 10 ? 10 : allTransactions.length, // Ograniczamy do 10 ostatnich, żeby nie było za długo
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: allTransactions.length > 10 ? 10 : allTransactions.length,
                           separatorBuilder: (_, __) => const Divider(height: 0),
                           itemBuilder: (context, index) {
                             final item = allTransactions[index];
@@ -223,7 +240,9 @@ class MyHomePage extends StatelessWidget {
                                 ),
                               );
                             } else if (item is Expense) {
-                              final color = categoryColors[item.category] ?? Colors.grey;
+                              // <--- ZMIANA: Pobieramy kolor z Providera dla wydatku
+                              final color = categoryProvider.getColorFor(item.category, CategoryType.expense);
+                              
                               return Dismissible(
                                 key: ValueKey('exp_${item.id}'),
                                 direction: DismissDirection.endToStart,
@@ -233,7 +252,7 @@ class MyHomePage extends StatelessWidget {
                                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddExpenseScreen(expenseToEdit: item))),
                                   leading: CircleAvatar(
                                     backgroundColor: color,
-                                    child: Text(item.category[0]),
+                                    child: Text(item.category.isNotEmpty ? item.category[0] : '?'),
                                   ),
                                   title: Text(item.title),
                                   subtitle: Text('${DateFormat('dd.MM.yyyy').format(item.date)} • ${item.category}'),
@@ -250,7 +269,6 @@ class MyHomePage extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Dodatkowy odstęp na dole, żeby przycisk "+" nie zasłaniał ostatniego elementu
                   const SizedBox(height: 80),
                 ],
               ),

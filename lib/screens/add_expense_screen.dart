@@ -7,6 +7,10 @@ import 'package:provider/provider.dart';
 import '../models/expense_model.dart';
 import '../providers/expenses_provider.dart';
 
+// DODANY IMPORT MODELU KATEGORII (jeśli masz inny plik, dostosuj ścieżkę)
+import '../models/category_model.dart';
+import '../widgets/category_selector.dart';
+
 class AddExpenseScreen extends StatefulWidget {
   // Opcjonalny parametr: jeśli jest null = tryb dodawania, jeśli jest obiekt = tryb edycji
   final Expense? expenseToEdit;
@@ -24,7 +28,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   
   DateTime? _selectedDate;
   String _selectedCategory = 'Food';
-  final _categories = ['Food', 'Transport', 'Entertainment', 'Other'];
+  // lista kategorii usunięta — używamy CategorySelector
 
   @override
   void initState() {
@@ -121,26 +125,23 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 validator: (val) => (val == null || double.tryParse(val) == null) ? 'Błędna kwota' : null,
               ),
               const SizedBox(height: 16),
+              // Nowy selektor kategorii
+              CategorySelector(
+                type: CategoryType.expense,
+                initialValue: _selectedCategory,
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedCategory = newValue;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              // Data po prawej
               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedCategory, // Isarowa kategoria musi pasować do listy
-                      items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                      onChanged: (val) => setState(() => _selectedCategory = val!),
-                      decoration: const InputDecoration(labelText: 'Kategoria'),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(_selectedDate == null ? 'Brak daty' : DateFormat('dd.MM.yyyy').format(_selectedDate!)),
-                        IconButton(icon: const Icon(Icons.calendar_month), onPressed: _presentDatePicker),
-                      ],
-                    ),
-                  ),
+                  Text(_selectedDate == null ? 'Brak daty' : DateFormat('dd.MM.yyyy').format(_selectedDate!)),
+                  IconButton(icon: const Icon(Icons.calendar_month), onPressed: _presentDatePicker),
                 ],
               ),
               const SizedBox(height: 32),

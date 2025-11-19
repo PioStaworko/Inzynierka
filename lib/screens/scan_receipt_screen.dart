@@ -150,7 +150,6 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
                             width: double.infinity,
                             child: FilledButton(
                               onPressed: () {
-                                // TODO: Przejdź do ekranu weryfikacji
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text("Parser w budowie...")),
                                 );
