@@ -6,6 +6,10 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../utils/receipt_parser.dart';
+
+import '../screens/verify_receipt_screen.dart';
+
 class ScanReceiptScreen extends StatefulWidget {
   const ScanReceiptScreen({super.key});
 
@@ -38,7 +42,7 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
         sourcePath: pickedFile.path,
         uiSettings: [
           AndroidUiSettings(
-            toolbarTitle: 'Dotnij paragon',
+            toolbarTitle: 'Przytnij paragon',
             toolbarColor: Colors.deepOrange,
             toolbarWidgetColor: Colors.white,
             initAspectRatio: CropAspectRatioPreset.original,
@@ -150,9 +154,33 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
                             width: double.infinity,
                             child: FilledButton(
                               onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("Parser w budowie...")),
-                                );
+                                if (_scannedText.isEmpty) return;
+                                  // Debugowanie w konsoli
+                                  print("--- SUROWY TEKST Z OCR ---");
+                                  print(_scannedText);
+                                  print("--------------------------");
+
+                                  final items = ReceiptParser.parse(_scannedText);
+
+                                  print("--- ZNALEZIONE PRODUKTY (${items.length}) ---");
+                                  for (var item in items) {
+                                    print("Produkt: '${item.name}' | Cena: ${item.amount}");
+                                  }
+                                  print("--------------------------");
+
+                                  if (items.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text("Nie udało się odczytać produktów. Spróbuj poprawić kadrowanie.")),
+                                    );
+                                    return;
+                                  }
+
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => VerifyReceiptScreen(parsedItems: items),
+                                    ),
+                                  );
                               },
                               child: const Text("Przeanalizuj paragon"),
                             ),
