@@ -1,9 +1,11 @@
 // lib/widgets/app_drawer.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../screens/recurring_expenses_list_screen.dart'; // Stworzymy ten plik za chwilę
 import '../screens/recurring_income_list_screen.dart';
 import '../screens/settings_screen.dart';
+import '../providers/theme_provider.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -78,6 +80,30 @@ class AppDrawer extends StatelessWidget {
                 MaterialPageRoute(builder: (ctx) => const SettingsScreen()),
               );
             },
+          ),
+          // Motyw - szybkie przełączanie (System / Jasny / Ciemny)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Consumer<ThemeProvider>(
+              builder: (context, themeProvider, _) {
+                final current = themeProvider.themeMode;
+                return ListTile(
+                  leading: const Icon(Icons.brightness_6),
+                  title: const Text('Motyw'),
+                  trailing: DropdownButton<ThemeMode>(
+                    value: current,
+                    items: const [
+                      DropdownMenuItem(value: ThemeMode.system, child: Text('Systemowy')),
+                      DropdownMenuItem(value: ThemeMode.light, child: Text('Jasny')),
+                      DropdownMenuItem(value: ThemeMode.dark, child: Text('Ciemny')),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) themeProvider.setThemeMode(v);
+                    },
+                  ),
+                );
+              },
+            ),
           ),
           // Tutaj w przyszłości możesz dodać "Przychody", "Ustawienia" itp.
         ],

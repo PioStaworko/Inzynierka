@@ -1,21 +1,18 @@
-// lib/providers/category_provider.dart
-
 import 'package:flutter/material.dart';
-import 'package:isar/isar.dart';
-import '../models/category_model.dart';
+import '../data/app_database.dart';
 
 class CategoryProvider extends ChangeNotifier {
-  final Isar isar;
+  final CategoriesDao dao;
+  
   List<Category> _expenseCategories = [];
   List<Category> _incomeCategories = [];
 
-  CategoryProvider(this.isar) {
+  CategoryProvider(this.dao) {
     _initializeCategories();
   }
 
   Future<void> _initializeCategories() async {
-    // Jeśli baza jest pusta, dodaj kategorie domyślne
-    if (await isar.categorys.count() == 0) {
+    if (await dao.countCategories() == 0) {
       await _seedDefaults();
     }
     _loadCategories();
@@ -23,32 +20,29 @@ class CategoryProvider extends ChangeNotifier {
 
   Future<void> _seedDefaults() async {
     final defaults = [
-      Category(name: 'Jedzenie', type: CategoryType.expense, colorValue: Colors.orange.value),
-      Category(name: 'Transport', type: CategoryType.expense, colorValue: Colors.blue.value),
-      Category(name: 'Dom', type: CategoryType.expense, colorValue: Colors.brown.value),
-      Category(name: 'Rozrywka', type: CategoryType.expense, colorValue: Colors.purple.value),
-      Category(name: 'Inne', type: CategoryType.expense, colorValue: Colors.grey.value),
-      Category(name: 'Wypłata', type: CategoryType.income, colorValue: Colors.green.value),
-      Category(name: 'Prezent', type: CategoryType.income, colorValue: Colors.amber.value),
+      CategoriesCompanion.insert(name: 'Jedzenie', type: 'expense', colorValue: Colors.orange.toARGB32()),
+      CategoriesCompanion.insert(name: 'Transport', type: 'expense', colorValue: Colors.blue.toARGB32()),
+      CategoriesCompanion.insert(name: 'Dom', type: 'expense', colorValue: Colors.brown.toARGB32()),
+      CategoriesCompanion.insert(name: 'Rozrywka', type: 'expense', colorValue: Colors.purple.toARGB32()),
+      CategoriesCompanion.insert(name: 'Inne', type: 'expense', colorValue: Colors.grey.toARGB32()),
+      CategoriesCompanion.insert(name: 'Wypłata', type: 'income', colorValue: Colors.green.toARGB32()),
+      CategoriesCompanion.insert(name: 'Prezent', type: 'income', colorValue: Colors.amber.toARGB32()),
     ];
-    await isar.writeTxn(() async {
-      await isar.categorys.putAll(defaults);
-    });
+    await dao.insertAll(defaults);
   }
 
-  void _loadCategories() {
-    _expenseCategories = isar.categorys.filter().typeEqualTo(CategoryType.expense).findAllSync();
-    _incomeCategories = isar.categorys.filter().typeEqualTo(CategoryType.income).findAllSync();
+  void _loadCategories() async {
+    final all = await dao.getAllCategories();
+    _expenseCategories = all.where((c) => c.type == 'expense').toList();
+    _incomeCategories = all.where((c) => c.type == 'income').toList();
     notifyListeners();
   }
 
-  // GETTERY
   List<Category> get expenseCategories => _expenseCategories;
   List<Category> get incomeCategories => _incomeCategories;
 
-  // Metoda do pobierania koloru (dla wykresów i list)
-  Color getColorFor(String name, CategoryType type) {
-    final list = type == CategoryType.expense ? _expenseCategories : _incomeCategories;
+  Color getColorFor(String name, String type) {
+    final list = type == 'expense' ? _expenseCategories : _incomeCategories;
     try {
       return Color(list.firstWhere((c) => c.name == name).colorValue);
     } catch (_) {
@@ -56,13 +50,17 @@ class CategoryProvider extends ChangeNotifier {
     }
   }
 
-  // DODAWANIE NOWEJ KATEGORII
-  Future<Category> addCategory(String name, CategoryType type, Color color) async {
-    final newCat = Category(name: name, type: type, colorValue: color.value);
-    await isar.writeTxn(() async {
-      await isar.categorys.put(newCat);
-    });
-    _loadCategories(); // Odśwież listy
-    return newCat;
+  Future<void> addCategory(String name, String type, Color color) async {
+    await dao.insertCategory(CategoriesCompanion.insert(
+      name: name,
+      type: type,
+      colorValue: color.toARGB32(),
+    ));
+    _loadCategories();
+  }
+  
+  Future<void> deleteCategory(int id) async {
+    await dao.deleteCategory(id);
+    _loadCategories();
   }
 }

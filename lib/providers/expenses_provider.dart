@@ -1,79 +1,86 @@
-// lib/providers/expenses_provider.dart
-
 import 'package:flutter/foundation.dart';
-import 'package:isar/isar.dart';
-import '../models/expense_model.dart';
+import 'package:drift/drift.dart' as drift;
+import '../data/app_database.dart'; // Tu są klasy ExpenseWithItems, ExpensesDao, itp.
 
 class ExpensesState extends ChangeNotifier {
-  final Isar isar;
-  List<Expense> _expenses = []; // Lista nie jest już 'final'
+  final ExpensesDao dao;
+  
+  // Przechowujemy listę połączonych obiektów (Wydatek + Lista Produktów)
+  List<ExpenseWithItems> _expenses = [];
 
-  // Konstruktor przyjmuje Isar i od razu ładuje dane
-  ExpensesState(this.isar) {
-    _loadExpenses();
+  ExpensesState(this.dao) {
+    _init();
   }
 
-  // PRYWATNA METODA DO WCZYTYWANIA DANYCH
-  // Używamy .findAllSync() - to operacja synchroniczna,
-  // idealna do załadowania stanu przy starcie providera.
-  void _loadExpenses() {
-    _expenses = isar.expenses.where().findAllSync();
-    // Nie trzeba 'notifyListeners()', bo to się dzieje w konstruktorze
+  void _init() {
+    // Drift oferuje streamy (watch), które same informują o zmianach w bazie.
+    // Dzięki temu UI odświeży się automatycznie po każdym insercie/delete.
+    dao.watchRecentExpenses().listen((data) {
+      _expenses = data;
+      notifyListeners();
+    });
   }
 
-  // PUBLICZNE GETTERY (działają tak jak wcześniej)
-  List<Expense> get recent => List.unmodifiable(_expenses.reversed);
+  // Getter dla listy
+  List<ExpenseWithItems> get recent => _expenses;
 
+  // Logika obliczania sum (inteligentna: sprawdza czy są pod-produkty)
   Map<String, double> get totalsByCategory {
     final map = <String, double>{};
-    //jeśli paragon ma itemy, sumujemy je po kategoriach itemów
-    //jeśli nie ma to dodajemy jako oddzielną kategorię.
-    for (var e in _expenses) {
-      if (e.items != null && e.items!.isNotEmpty) {
-        for (var item in e.items!) {
-          map[item.category] = (map[item.category] ?? 0) + item.amount;
+    
+    for (var entry in _expenses) {
+      // entry.items to lista produktów (z tabeli ExpenseItems)
+      if (entry.items.isNotEmpty) {
+        // Jeśli to paragon z pozycjami - sumujemy kategorie pozycji
+        for (var item in entry.items) {
+          // Używamy pola 'categoryName' zgodnie z Twoim plikiem tables.dart
+          map[item.categoryName] = (map[item.categoryName] ?? 0) + item.amount;
         }
-      } 
-      
-      else {
-        map[e.category] = (map[e.category] ?? 0) + e.amount;
+      } else {
+        // Jeśli to zwykły wydatek - bierzemy kategorię główną
+        // entry.expense to nagłówek (z tabeli Expenses)
+        map[entry.expense.categoryName] = (map[entry.expense.categoryName] ?? 0) + entry.expense.amount;
       }
     }
     return map;
   }
 
-  // PUBLICZNA METODA DO DODAWANIA (TERAZ ASYNCHRONICZNA)
-  Future<void> addExpense(Expense e) async {
-    // 1. Zapisz do bazy danych (operacja asynchroniczna)
-    await isar.writeTxn(() async {
-      await isar.expenses.put(e);
-    });
-
-    // 2. Zaktualizuj stan lokalny
-    _expenses.add(e);
-
-    // 3. Powiadom widżety o zmianie
-    notifyListeners();
-  }
-
-  Future<void> deleteExpense(int expenseId) async {
-    // 1. Usuń z bazy danych
-    await isar.writeTxn(() async {
-      await isar.expenses.delete(expenseId);
-    });
-
-    // 2. Zaktualizuj stan lokalny (przeładuj z bazy)
-    _loadExpenses();
-    notifyListeners();
-  }
-
-  Future<void> updateExpense(Expense updatedExpense) async {  
-    await isar.writeTxn(() async {
-      await isar.expenses.put(updatedExpense);
-    });
+  // DODAWANIE (Obsługuje i zwykły wydatek, i paragon)
+  Future<void> addExpense({
+    required String title, 
+    required double amount, 
+    required DateTime date, 
+    required String category,
+    List<ExpenseItemsCompanion>? items, // Opcjonalna lista produktów
+  }) async {
     
-    _loadExpenses();
-    notifyListeners();
+    // Tworzymy obiekt do wstawienia (Companion)
+    final expenseCompanion = ExpensesCompanion.insert(
+      title: title,
+      amount: amount,
+      date: date,
+      categoryName: category, // Zgodnie z tables.dart
+    );
+
+    // Przekazujemy do DAO, które obsłuży transakcję
+    await dao.insertExpenseWithItems(expenseCompanion, items ?? []);
   }
-  // ======================================
+
+  // USUWANIE
+  Future<void> deleteExpense(int id) async {
+    await dao.deleteExpense(id);
+  }
+
+  // AKTUALIZACJA (Nagłówka)
+  Future<void> updateExpense(Expense expense) async {
+    // Konwertujemy obiekt danych z powrotem na Companion, aby móc go edytować
+    final companion = ExpensesCompanion(
+      id: drift.Value(expense.id),
+      title: drift.Value(expense.title),
+      amount: drift.Value(expense.amount),
+      categoryName: drift.Value(expense.categoryName),
+      date: drift.Value(expense.date),
+    );
+    await dao.updateExpense(companion);
+  }
 }

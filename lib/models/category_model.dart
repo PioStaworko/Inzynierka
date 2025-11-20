@@ -1,29 +1,8 @@
-// lib/models/category_model.dart
+// Compatibility shim: re-export Drift-generated Category and provide CategoryType alias
 
-import 'package:isar/isar.dart';
+export '../data/app_database.dart' show Category, CategoriesCompanion;
 
-part 'category_model.g.dart';
+// Older code expected an enum CategoryType — provide a simple enum-like class
+enum CategoryType { expense, income }
 
-enum CategoryType {
-  expense,
-  income
-}
-
-@collection
-class Category {
-  Id id = Isar.autoIncrement;
-
-  @Index()
-  late String name; // Nazwa np. "Jedzenie"
-
-  @Enumerated(EnumType.name)
-  late CategoryType type; // Czy to wydatek czy przychód
-
-  late int colorValue; // Kolor zapisany jako int
-
-  Category({
-    required this.name,
-    required this.type,
-    required this.colorValue,
-  });
-}
+String categoryTypeToString(CategoryType t) => t == CategoryType.expense ? 'expense' : 'income';

@@ -2,11 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/category_model.dart';
 import '../providers/category_provider.dart';
 
 class CategorySelector extends StatefulWidget {
-  final CategoryType type;
+  final String type; // <--- Zmieniamy z Enum na String ('expense' lub 'income')
   final String? initialValue;
   final Function(String) onChanged;
 
@@ -82,12 +81,14 @@ class _CategorySelectorState extends State<CategorySelector> {
               ElevatedButton(
                 onPressed: () async {
                   if (nameController.text.isNotEmpty) {
+                    // Capture provider before awaiting to avoid using BuildContext across async gaps
+                    final categoryProvider = context.read<CategoryProvider>();
                     // 1. Zapisz w bazie przez Provider
-                    await context.read<CategoryProvider>().addCategory(
-                          nameController.text,
-                          widget.type,
-                          selectedColor,
-                        );
+                    await categoryProvider.addCategory(
+                      nameController.text,
+                      widget.type,
+                      selectedColor,
+                    );
                     // 2. Ustaw nową wartość w dropdownie
                     setState(() {
                       _currentValue = nameController.text;
@@ -110,7 +111,7 @@ class _CategorySelectorState extends State<CategorySelector> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CategoryProvider>();
-    final categories = widget.type == CategoryType.expense
+    final categories = widget.type == 'expense'
         ? provider.expenseCategories
         : provider.incomeCategories;
 
@@ -131,7 +132,7 @@ class _CategorySelectorState extends State<CategorySelector> {
     }
 
     return DropdownButtonFormField<String>(
-      value: _currentValue,
+      initialValue: _currentValue,
       decoration: const InputDecoration(labelText: 'Kategoria'),
       items: [
         // 1. Lista istniejących kategorii

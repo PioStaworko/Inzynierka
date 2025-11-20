@@ -4,15 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../models/expense_model.dart';
+// IMPORT KLAS DRIFT (Zamiast ../models/expense_model.dart)
+import '../data/app_database.dart'; 
 import '../providers/expenses_provider.dart';
-
-// DODANY IMPORT MODELU KATEGORII (jeśli masz inny plik, dostosuj ścieżkę)
-import '../models/category_model.dart';
 import '../widgets/category_selector.dart';
 
 class AddExpenseScreen extends StatefulWidget {
-  // Opcjonalny parametr: jeśli jest null = tryb dodawania, jeśli jest obiekt = tryb edycji
+  // Używamy klasy 'Expense' wygenerowanej przez Drift
   final Expense? expenseToEdit;
 
   const AddExpenseScreen({super.key, this.expenseToEdit});
@@ -27,21 +25,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   late TextEditingController _amountController;
   
   DateTime? _selectedDate;
-  String _selectedCategory = 'Food';
-  // lista kategorii usunięta — używamy CategorySelector
+  String _selectedCategory = 'Inne'; // Domyślna kategoria
 
   @override
   void initState() {
     super.initState();
-    // LOGIKA INICJALIZACJI: Sprawdzamy, czy jesteśmy w trybie edycji
     if (widget.expenseToEdit != null) {
       final e = widget.expenseToEdit!;
       _titleController = TextEditingController(text: e.title);
       _amountController = TextEditingController(text: e.amount.toString());
       _selectedDate = e.date;
-      _selectedCategory = e.category;
+      // W Drift kategoria jest w polu categoryName (zgodnie z tabelą)
+      _selectedCategory = e.categoryName; 
     } else {
-      // Tryb dodawania - puste pola
       _titleController = TextEditingController();
       _amountController = TextEditingController();
       _selectedDate = DateTime.now();
@@ -57,11 +53,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   Future<void> _presentDatePicker() async {
     final now = DateTime.now();
-    final firstDate = DateTime(now.year - 1, now.month, now.day);
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? now,
-      firstDate: DateTime(now.year, now.month - 6, now.day),
+      firstDate: DateTime(now.year - 2), // Pozwalamy cofnąć się o 2 lata
       lastDate: now,
     );
     if (pickedDate != null) {
@@ -75,24 +70,31 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDate == null) return;
 
-    final enteredAmount = double.tryParse(_amountController.text);
+    final enteredAmount = double.tryParse(_amountController.text.replaceAll(',', '.'));
     if (enteredAmount == null || enteredAmount <= 0) return;
 
-    // Tworzymy obiekt
-    final expense = Expense(
-      title: _titleController.text,
-      amount: enteredAmount,
-      category: _selectedCategory,
-      date: _selectedDate!,
-    );
+    final provider = context.read<ExpensesState>();
 
-    // DECYZJA: Edycja czy Dodawanie?
     if (widget.expenseToEdit != null) {
-      // WAŻNE: Musimy przepisać ID ze starego obiektu!
-      expense.id = widget.expenseToEdit!.id;
-      await context.read<ExpensesState>().updateExpense(expense);
+      // EDYCJA
+      // Tworzymy zmodyfikowany obiekt Expense (Drift generuje metodę copyWith)
+      final updatedExpense = widget.expenseToEdit!.copyWith(
+        title: _titleController.text,
+        amount: enteredAmount,
+        categoryName: _selectedCategory,
+        date: _selectedDate!,
+      );
+      await provider.updateExpense(updatedExpense);
     } else {
-      await context.read<ExpensesState>().addExpense(expense);
+      // DODAWANIE
+      // Provider używa teraz nazwanych argumentów
+      await provider.addExpense(
+        title: _titleController.text,
+        amount: enteredAmount,
+        date: _selectedDate!,
+        category: _selectedCategory,
+        items: [], // Pusta lista produktów dla ręcznego wpisu
+      );
     }
 
     if (mounted) Navigator.of(context).pop();
@@ -100,7 +102,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Zmieniamy tytuł w zależności od trybu
     final isEditing = widget.expenseToEdit != null;
 
     return Scaffold(
@@ -122,12 +123,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 controller: _amountController,
                 decoration: const InputDecoration(labelText: 'Kwota', suffixText: 'zł'),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (val) => (val == null || double.tryParse(val) == null) ? 'Błędna kwota' : null,
+                validator: (val) => (val == null || double.tryParse(val.replaceAll(',', '.')) == null) ? 'Błędna kwota' : null,
               ),
               const SizedBox(height: 16),
-              // Nowy selektor kategorii
+              
+              // SELEKTOR KATEGORII
+              // UWAGA: CategorySelector musi być przystosowany do Stringów
               CategorySelector(
-                type: CategoryType.expense,
+                type: 'expense', // String zamiast Enum (zgodnie z bazą)
                 initialValue: _selectedCategory,
                 onChanged: (newValue) {
                   setState(() {
@@ -135,8 +138,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   });
                 },
               ),
+              
               const SizedBox(height: 16),
-              // Data po prawej
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [

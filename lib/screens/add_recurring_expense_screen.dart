@@ -3,11 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../models/recurring_expense_model.dart';
+import '../data/app_database.dart';
 import '../providers/recurring_expense_provider.dart';
+import '../widgets/category_selector.dart';
 
 class AddRecurringExpenseScreen extends StatefulWidget {
-  final RecurringExpense? expenseToEdit; // Opcjonalny parametr do edycji
+  final RecurringExpense? expenseToEdit;
 
   const AddRecurringExpenseScreen({super.key, this.expenseToEdit});
 
@@ -21,14 +22,12 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
   late TextEditingController _amountController;
 
   DateTime? _selectedDate;
-  String _selectedCategory = 'Food';
-  Frequency _selectedFrequency = Frequency.monthly;
-  final _categories = ['Food', 'Transport', 'Entertainment', 'Other'];
+  String _selectedCategory = 'Inne';
+  String _selectedFrequency = 'monthly'; // String zamiast Enum
 
   @override
   void initState() {
     super.initState();
-    // LOGIKA INICJALIZACJI
     if (widget.expenseToEdit != null) {
       final e = widget.expenseToEdit!;
       _titleController = TextEditingController(text: e.title);
@@ -51,39 +50,37 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
   }
 
   Future<void> _presentDatePicker() async {
-    final now = DateTime.now();
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate ?? now,
-      firstDate: now,
-      lastDate: DateTime(now.year + 5),
-    );
-    if (pickedDate != null) {
-      setState(() { _selectedDate = pickedDate; });
-    }
+     // ... standardowy date picker ...
+     final now = DateTime.now();
+     final pickedDate = await showDatePicker(context: context, initialDate: _selectedDate ?? now, firstDate: now, lastDate: DateTime(now.year + 5));
+     if(pickedDate != null) setState(() => _selectedDate = pickedDate);
   }
 
   Future<void> _submitData() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDate == null) return;
-    final enteredAmount = double.tryParse(_amountController.text);
+    final enteredAmount = double.tryParse(_amountController.text.replaceAll(',', '.'));
     if (enteredAmount == null || enteredAmount <= 0) return;
 
-    final recurringExpense = RecurringExpense(
-      title: _titleController.text,
-      amount: enteredAmount,
-      category: _selectedCategory,
-      frequency: _selectedFrequency,
-      nextDueDate: _selectedDate!,
-    );
+    final provider = context.read<RecurringExpenseProvider>();
 
     if (widget.expenseToEdit != null) {
-      // Tryb EDYCJI: Przepisujemy ID
-      recurringExpense.id = widget.expenseToEdit!.id;
-      await context.read<RecurringExpenseProvider>().updateRecurringExpense(recurringExpense);
+      final updated = widget.expenseToEdit!.copyWith(
+        title: _titleController.text,
+        amount: enteredAmount,
+        category: _selectedCategory,
+        frequency: _selectedFrequency,
+        nextDueDate: _selectedDate!,
+      );
+      await provider.updateRecurringExpense(updated);
     } else {
-      // Tryb DODAWANIA
-      await context.read<RecurringExpenseProvider>().addRecurringExpense(recurringExpense);
+      await provider.addRecurringExpense(
+        _titleController.text,
+        enteredAmount,
+        _selectedCategory,
+        _selectedFrequency,
+        _selectedDate!,
+      );
     }
 
     if (mounted) Navigator.of(context).pop();
@@ -91,62 +88,41 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.expenseToEdit != null;
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'Edytuj szablon' : 'Dodaj wydatek cykliczny'),
-      ),
+      appBar: AppBar(title: const Text('Wydatki cykliczne')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Tytuł'),
-                validator: (val) => (val == null || val.isEmpty) ? 'Wpisz tytuł' : null,
+              TextFormField(controller: _titleController, decoration: const InputDecoration(labelText: 'Tytuł')),
+              TextFormField(controller: _amountController, decoration: const InputDecoration(labelText: 'Kwota'), keyboardType: TextInputType.number),
+              
+              const SizedBox(height: 16),
+              CategorySelector(
+                type: 'expense', 
+                initialValue: _selectedCategory,
+                onChanged: (val) => setState(() => _selectedCategory = val),
               ),
-              TextFormField(
-                controller: _amountController,
-                decoration: const InputDecoration(labelText: 'Kwota', suffixText: 'zł'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (val) => (val == null || double.tryParse(val) == null) ? 'Błędna kwota' : null,
-              ),
+              
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                decoration: const InputDecoration(labelText: 'Kategoria'),
-                items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                onChanged: (val) => setState(() => _selectedCategory = val!),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<Frequency>(
-                value: _selectedFrequency,
+                initialValue: _selectedFrequency,
                 decoration: const InputDecoration(labelText: 'Częstotliwość'),
-                items: Frequency.values.map((f) {
-                  String label = f == Frequency.monthly ? 'Miesięcznie' : 
-                                 f == Frequency.weekly ? 'Tygodniowo' : 
-                                 f == Frequency.yearly ? 'Rocznie' : 'Codziennie';
-                  return DropdownMenuItem(value: f, child: Text(label));
-                }).toList(),
+                items: const [
+                  DropdownMenuItem(value: 'daily', child: Text('Codziennie')),
+                  DropdownMenuItem(value: 'weekly', child: Text('Tygodniowo')),
+                  DropdownMenuItem(value: 'monthly', child: Text('Miesięcznie')),
+                  DropdownMenuItem(value: 'yearly', child: Text('Rocznie')),
+                ],
                 onChanged: (val) => setState(() => _selectedFrequency = val!),
               ),
+
+              // ... Data i Przycisk (standardowo) ...
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(_selectedDate == null ? 'Brak daty' : 'Następna: ${DateFormat('dd.MM.yyyy').format(_selectedDate!)}'),
-                  IconButton(icon: const Icon(Icons.calendar_month), onPressed: _presentDatePicker),
-                ],
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: _submitData,
-                icon: Icon(isEditing ? Icons.save_as : Icons.save),
-                label: Text(isEditing ? 'Zapisz zmiany' : 'Zapisz szablon'),
-              ),
+              Row(children: [Text(_selectedDate == null ? 'Brak daty' : DateFormat('dd.MM.yyyy').format(_selectedDate!)), IconButton(icon: Icon(Icons.calendar_month), onPressed: _presentDatePicker)]),
+              ElevatedButton(onPressed: _submitData, child: Text('Zapisz')),
             ],
           ),
         ),

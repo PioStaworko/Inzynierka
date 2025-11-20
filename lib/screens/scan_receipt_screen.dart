@@ -60,9 +60,11 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
         _processImage();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Błąd kamery: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Błąd kamery: $e')),
+        );
+      }
     }
   }
 
@@ -160,7 +162,13 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
                                   print(_scannedText);
                                   print("--------------------------");
 
-                                  final items = ReceiptParser.parse(_scannedText);
+                                  final items = ReceiptParser.parse(_scannedText); // items to teraz List<ParsedItem>
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => VerifyReceiptScreen(parsedItems: items), // VerifyReceiptScreen oczekuje List<ParsedItem>
+                                    ),
+                                  );
 
                                   print("--- ZNALEZIONE PRODUKTY (${items.length}) ---");
                                   for (var item in items) {

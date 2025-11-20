@@ -6,11 +6,8 @@ import 'package:intl/intl.dart';
 
 import '../providers/expenses_provider.dart';
 import '../providers/income_provider.dart';
-import '../providers/category_provider.dart'; // <--- ZMIANA: Dodano import
-
-import '../models/expense_model.dart';
-import '../models/income_model.dart';
-import '../models/category_model.dart'; // <--- ZMIANA: Dodano import (dla CategoryType)
+import '../providers/category_provider.dart'; // provider kategorii
+import '../data/app_database.dart';
 
 import '../widgets/pie_chart_widget.dart';
 import '../widgets/monthly_bar_chart.dart';
@@ -53,15 +50,20 @@ class _MyHomePageState extends State<MyHomePage> {
   Map<String, double> _computeTotalsForRange(ExpensesState expenseState, TimeRange range) {
     final start = _rangeStart(range);
     final map = <String, double>{};
-    for (final e in expenseState.recent) {
-      if (start != null && e.date.isBefore(start)) continue;
 
-      if (e.items != null && e.items!.isNotEmpty) {
-        for (final item in e.items!) {
-          map[item.category] = (map[item.category] ?? 0) + item.amount;
+    // expenseState.recent zawiera ExpenseWithItems (nagłówek + lista pozycji)
+    for (final entry in expenseState.recent) {
+      final exp = entry.expense;
+      if (start != null && exp.date.isBefore(start)) continue;
+
+      if (entry.items.isNotEmpty) {
+        for (final item in entry.items) {
+          final cat = item.categoryName;
+          map[cat] = (map[cat] ?? 0) + item.amount;
         }
       } else {
-        map[e.category] = (map[e.category] ?? 0) + e.amount;
+        final cat = exp.categoryName;
+        map[cat] = (map[cat] ?? 0) + exp.amount;
       }
     }
     return map;
@@ -141,9 +143,10 @@ class _MyHomePageState extends State<MyHomePage> {
     final balance = totalIncomes - totalExpenses;
 
     // === ŁĄCZENIE LIST I SORTOWANIE ===
+    // Zamieniamy ExpenseWithItems na Expense (nagłówek), żeby ułatwić renderowanie
     final List<dynamic> allTransactions = [
-      ...expenseState.recent,
-      ...incomeState.allIncomes
+      ...expenseState.recent.map((e) => e.expense),
+      ...incomeState.allIncomes,
     ];
     allTransactions.sort((a, b) => b.date.compareTo(a.date));
     // ==================================
@@ -242,9 +245,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                 // Najprościej jest zbudować tę mapę dynamicznie:
                                 colors: Map.fromEntries(
                                   totals.keys.map((k) => MapEntry(
-                                    k, 
-                                    categoryProvider.getColorFor(k, CategoryType.expense)
-                                  ))
+                                    k,
+                                    categoryProvider.getColorFor(k, 'expense'),
+                                  )),
                                 ),
                                 size: 160,
                               ),
@@ -257,7 +260,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             runSpacing: 4,
                             children: totals.keys.map((k) {
                               // <--- ZMIANA: Pobieramy kolor z Providera, zamiast ze stałej mapy
-                              final c = categoryProvider.getColorFor(k, CategoryType.expense);
+                              final c = categoryProvider.getColorFor(k, 'expense');
                               return Chip(
                                 avatar: CircleAvatar(backgroundColor: c),
                                 label: Text('$k — ${totals[k]!.toStringAsFixed(2)} zł'),
@@ -283,7 +286,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: allTransactions.length > 10 ? 10 : allTransactions.length,
-                          separatorBuilder: (_, __) => const Divider(height: 0),
+                          separatorBuilder: (context, index) => const Divider(height: 0),
                           itemBuilder: (context, index) {
                             final item = allTransactions[index];
 
@@ -308,7 +311,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               );
                             } else if (item is Expense) {
                               // <--- ZMIANA: Pobieramy kolor z Providera dla wydatku
-                              final color = categoryProvider.getColorFor(item.category, CategoryType.expense);
+                              final color = categoryProvider.getColorFor(item.categoryName, 'expense');
                               
                               return Dismissible(
                                 key: ValueKey('exp_${item.id}'),
@@ -319,10 +322,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddExpenseScreen(expenseToEdit: item))),
                                   leading: CircleAvatar(
                                     backgroundColor: color,
-                                    child: Text(item.category.isNotEmpty ? item.category[0] : '?'),
+                                    child: Text(item.categoryName.isNotEmpty ? item.categoryName[0] : '?'),
                                   ),
                                   title: Text(item.title),
-                                  subtitle: Text('${DateFormat('dd.MM.yyyy').format(item.date)} • ${item.category}'),
+                                  subtitle: Text('${DateFormat('dd.MM.yyyy').format(item.date)} • ${item.categoryName}'),
                                   trailing: Text(
                                     '-${item.amount.toStringAsFixed(2)} zł',
                                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),

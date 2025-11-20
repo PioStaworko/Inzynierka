@@ -1,54 +1,52 @@
-// lib/providers/recurring_expense_provider.dart
-
 import 'package:flutter/foundation.dart';
-import 'package:isar/isar.dart';
-import '../models/recurring_income_model.dart';
+import 'package:drift/drift.dart' as drift; // Alias, żeby nie mylić typów
+import '../data/app_database.dart';
 
 class RecurringIncomeProvider extends ChangeNotifier {
-  final Isar isar;
+  final RecurringDao dao;
   List<RecurringIncome> _templates = [];
-  // Konstruktor od razu ładuje szablony
-  RecurringIncomeProvider(this.isar) {
+
+  RecurringIncomeProvider(this.dao) {
     _loadTemplates();
   }
 
-  // Prywatna metoda ładowania
-  void _loadTemplates() {
-    // Sortujemy po dacie następnej płatności
-    _templates = isar.recurringIncomes
-        .where()
-        .sortByNextDueDate()
-        .findAllSync();
+  Future<void> _loadTemplates() async {
+    _templates = await dao.getRecurringIncomes();
+    notifyListeners();
   }
 
-  // Publiczny getter do odczytu przez UI
   List<RecurringIncome> get allTemplates => List.unmodifiable(_templates);
 
-  // Metoda dodawania (już ją mamy, ale upewniamy się, że odświeży listę)
-  Future<void> addRecurringIncome(RecurringIncome ri) async {
-    await isar.writeTxn(() async {
-      await isar.recurringIncomes.put(ri);
-    });
-    // Przeładuj listę i powiadom słuchaczy
+  // Dodawanie (używamy Companion do wstawiania)
+  Future<void> addRecurringIncome(String title, double amount, String source, String frequency, DateTime nextDate) async {
+    final entry = RecurringIncomesCompanion.insert(
+      title: title,
+      amount: amount,
+      source: source,
+      frequency: frequency,
+      nextDueDate: nextDate,
+    );
+    await dao.addRecurringIncome(entry);
     _loadTemplates();
-    notifyListeners();
   }
 
-  // NOWA METODA: Usuwanie szablonu
+  // Usuwanie
   Future<void> deleteRecurringIncome(int templateId) async {
-    await isar.writeTxn(() async {
-      await isar.recurringIncomes.delete(templateId);
-    });
-    // Przeładuj listę i powiadom słuchaczy
+    await dao.deleteRecurringIncome(templateId);
     _loadTemplates();
-    notifyListeners();
   }
 
-  Future<void> updateRecurringIncome(RecurringIncome updatedTemplate) async {
-    await isar.writeTxn(() async {
-      await isar.recurringIncomes.put(updatedTemplate);
-    });
+  // Aktualizacja (używamy Companion z ID)
+  Future<void> updateRecurringIncome(RecurringIncome item) async {
+    final entry = RecurringIncomesCompanion(
+      id: drift.Value(item.id),
+      title: drift.Value(item.title),
+      amount: drift.Value(item.amount),
+      source: drift.Value(item.source),
+      frequency: drift.Value(item.frequency),
+      nextDueDate: drift.Value(item.nextDueDate),
+    );
+    await dao.updateRecurringIncome(entry);
     _loadTemplates();
-    notifyListeners();
   }
 }

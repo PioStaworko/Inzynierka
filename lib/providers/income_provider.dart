@@ -1,87 +1,76 @@
 import 'package:flutter/foundation.dart';
-import 'package:isar/isar.dart';
-import '../models/income_model.dart';
-import '../models/recurring_income_model.dart'; // <--- Potrzebujemy tego importu, żeby widzieć szablony
+import '../data/app_database.dart';
 
 class IncomeProvider extends ChangeNotifier {
-  final Isar isar;
+  final IncomesDao incomesDao;
+  final RecurringDao recurringDao;
+
   List<Income> _incomes = [];
 
-  IncomeProvider(this.isar) {
-    // Przy starcie uruchamiamy logikę generowania i ładowania
+  IncomeProvider(this.incomesDao, this.recurringDao) {
     _initializeState();
   }
 
   Future<void> _initializeState() async {
-    // 1. Najpierw sprawdź i wygeneruj zaległe/dzisiejsze wpływy z szablonów
     await _generateRecurringIncomes();
-    
-    // 2. Dopiero potem wczytaj listę do wyświetlenia
     _loadIncomes();
+  }
+
+  Future<void> _loadIncomes() async {
+    _incomes = await incomesDao.getAllIncomes();
     notifyListeners();
   }
 
-  // Wczytywanie listy przychodów (posortowane od najnowszych)
-  void _loadIncomes() {
-    _incomes = isar.incomes.where().sortByDateDesc().findAllSync();
-  }
-
-  // === GŁÓWNA LOGIKA GENEROWANIA PRZYCHODÓW ===
+  // === LOGIKA GENEROWANIA ===
   Future<void> _generateRecurringIncomes() async {
     final now = DateTime.now();
     
-    // Pobieramy wszystkie szablony przychodów
-    final templates = await isar.recurringIncomes.where().findAll();
-
-    final List<Income> newIncomes = [];
-    final List<RecurringIncome> updatedTemplates = [];
+    // Pobieramy szablony z bazy (RecurringDao)
+    final templates = await recurringDao.getRecurringIncomes();
+    
+    final newIncomes = <IncomesCompanion>[];
 
     for (var template in templates) {
       var currentDueDate = template.nextDueDate;
-      var templateToUpdate = template;
+      bool changed = false;
 
-      // Pętla generująca: "Dopóki data płatności jest w przeszłości lub dzisiaj"
+      // Pętla: dopóki data płatności jest w przeszłości lub dzisiaj
       while (currentDueDate.isBefore(now) || currentDueDate.isAtSameMomentAs(now)) {
-        
-        // 1. Stwórz konkretny przychód (Instancję)
-        final newIncome = Income(
-          title: template.title, // Używamy tytułu z szablonu
-          amount: template.amount,
-          date: currentDueDate,
-        );
-        newIncomes.add(newIncome);
-
-        // 2. Oblicz następną datę (przesuń o miesiąc/tydzień itp.)
-        final nextDate = templateToUpdate.nextDateAfter;
-        
-        // 3. Zaktualizuj szablon o nową datę
-        templateToUpdate = RecurringIncome(
+        // Tworzymy nowy przychód (IncomesCompanion)
+        newIncomes.add(IncomesCompanion.insert(
           title: template.title,
           amount: template.amount,
-          source: template.source,
-          frequency: template.frequency,
-          nextDueDate: nextDate,
-        )..id = template.id; // Zachowaj to samo ID szablonu
+          date: currentDueDate,
+        ));
 
-        currentDueDate = nextDate; // Przesuń pętlę
+        // Obliczamy następną datę (prosta logika miesięczna - tu można rozbudować o frequency)
+        // Zakładam, że Frequency to String 'monthly', 'weekly' itd.
+        if (template.frequency == 'monthly') {
+           currentDueDate = DateTime(currentDueDate.year, currentDueDate.month + 1, currentDueDate.day);
+        } else if (template.frequency == 'weekly') {
+           currentDueDate = currentDueDate.add(const Duration(days: 7));
+        } else if (template.frequency == 'daily') {
+           currentDueDate = currentDueDate.add(const Duration(days: 1));
+        } else if (template.frequency == 'yearly') {
+           currentDueDate = DateTime(currentDueDate.year + 1, currentDueDate.month, currentDueDate.day);
+        } else {
+           // Fallback - domyślnie miesiąc
+           currentDueDate = DateTime(currentDueDate.year, currentDueDate.month + 1, currentDueDate.day);
+        }
+        
+        changed = true;
       }
 
-      // Jeśli szablon się zmienił (data się przesunęła), dodaj do listy do zapisu
-      if (templateToUpdate.id != template.id || templateToUpdate.nextDueDate != template.nextDueDate) {
-        updatedTemplates.add(templateToUpdate);
+      // Jeśli wygenerowano nowe, aktualizujemy datę w szablonie
+      if (changed) {
+        await recurringDao.updateRecurringIncomeDate(template.id, currentDueDate);
       }
     }
 
-    // Zapisz wszystko w jednej transakcji (wydajność!)
-    if (newIncomes.isNotEmpty || updatedTemplates.isNotEmpty) {
-      await isar.writeTxn(() async {
-        if (newIncomes.isNotEmpty) {
-          await isar.incomes.putAll(newIncomes); // Dodaj nowe przychody
-        }
-        if (updatedTemplates.isNotEmpty) {
-          await isar.recurringIncomes.putAll(updatedTemplates); // Zaktualizuj daty w szablonach
-        }
-      });
+    // Zapisujemy batchowo nowe przychody
+    if (newIncomes.isNotEmpty) {
+      await incomesDao.addBatchIncomes(newIncomes);
+      _loadIncomes();
     }
   }
   
@@ -91,21 +80,19 @@ class IncomeProvider extends ChangeNotifier {
     return _incomes.fold(0.0, (sum, item) => sum + item.amount);
   }
 
-
-  Future<void> addIncome(Income income) async {
-    await isar.writeTxn(() async {
-      await isar.incomes.put(income);
-    });
+  // Dodawanie pojedynczego przychodu
+  Future<void> addIncome(String title, double amount, DateTime date) async {
+    await incomesDao.addIncome(IncomesCompanion.insert(
+      title: title,
+      amount: amount,
+      date: date,
+    ));
     _loadIncomes();
-    notifyListeners();
   }
 
-
+  // Usuwanie
   Future<void> deleteIncome(int incomeId) async {
-    await isar.writeTxn(() async {
-      await isar.incomes.delete(incomeId);
-    });
+    await incomesDao.deleteIncome(incomeId);
     _loadIncomes();
-    notifyListeners();
   }
 }

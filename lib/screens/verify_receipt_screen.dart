@@ -2,16 +2,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:isar/isar.dart';
+import 'package:drift/drift.dart' as drift;
 
-import '../models/expense_model.dart';
-import '../models/product_mapping_model.dart';
-import '../models/category_model.dart';
+// Importujemy bazę danych i parser
+import '../data/app_database.dart';
+import '../utils/receipt_parser.dart'; // Tu jest ParsedItem
 import '../providers/expenses_provider.dart';
 import '../widgets/category_selector.dart';
 
 class VerifyReceiptScreen extends StatefulWidget {
-  final List<ExpenseItem> parsedItems;
+  final List<ParsedItem> parsedItems;
   final double totalSum;
 
   const VerifyReceiptScreen({
@@ -25,39 +25,44 @@ class VerifyReceiptScreen extends StatefulWidget {
 }
 
 class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
-  late List<ExpenseItem> _items;
+  late List<ParsedItem> _items;
   final _titleController = TextEditingController(text: 'Zakupy (Paragon)');
-  late Isar _isar;
+  late RecurringDao _recurringDao; // DAO do obsługi ProductMappings
 
   @override
   void initState() {
     super.initState();
-    // Tworzymy kopię listy, aby móc ją swobodnie edytować
     _items = List.from(widget.parsedItems);
-    _isar = context.read<ExpensesState>().isar; 
+    // Pobieramy bazę danych, żeby dostać się do DAO
+    final db = context.read<AppDb>();
+    _recurringDao = db.recurringDao;
     
     _autoCategorizeItems(); 
   }
 
   Future<void> _autoCategorizeItems() async {
-    for (var item in _items) {
+    // Pobieramy wszystkie mapowania z bazy
+    final mappings = await _recurringDao.getAllMappings();
+    final updates = <int, Map<String, String>>{}; // index -> {'name':..., 'category':...}
+
+    for (var i = 0; i < _items.length; i++) {
+      final item = _items[i];
       if (item.rawId == null) continue;
-
-      // Sprawdzamy, czy znamy ten kod z paragonu (rawId)
-      final mapping = await _isar.productMappings
-          .filter()
-          .rawIdEqualTo(item.rawId!)
-          .findFirst();
-
-      if (mapping != null) {
-        setState(() {
-          // AUTOMATYZACJA:
-          // Jeśli produkt jest znany, podmieniamy jego nazwę na tę "ładną" (knownName)
-          // którą użytkownik wpisał ostatnim razem.
-          item.name = mapping.knownName; 
-          item.category = mapping.defaultCategory;
-        });
+      try {
+        final mapping = mappings.firstWhere((m) => m.rawId == item.rawId);
+        updates[i] = {'name': mapping.knownName, 'category': mapping.defaultCategory};
+      } catch (e) {
+        // Nie znaleziono - zostaje 'Inne'
       }
+    }
+
+    if (updates.isNotEmpty && mounted) {
+      setState(() {
+        updates.forEach((idx, map) {
+          _items[idx].name = map['name']!;
+          _items[idx].category = map['category']!;
+        });
+      });
     }
   }
 
@@ -66,35 +71,35 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
   Future<void> _saveReceipt() async {
     if (_items.isEmpty) return;
 
-    final mappingsToSave = <ProductMapping>[];
-    
+    // 1. Uczenie się (Zapisujemy ProductMappings)
     for (var item in _items) {
-      // UCZENIE SIĘ:
-      // Zapisujemy parę: [Kod z Paragonu] -> [Nazwa wpisana przez usera] + [Kategoria]
-      if (item.rawId != null && item.category != 'Other') {
-        mappingsToSave.add(ProductMapping(
-          rawId: item.rawId!, 
-          knownName: item.name ?? item.rawId!, // Tu zapisujemy edytowaną nazwę!
+      if (item.rawId != null && item.category != 'Inne') {
+        final mappingEntry = ProductMappingsCompanion.insert(
+          rawId: item.rawId!,
+          knownName: item.name,
           defaultCategory: item.category,
-        ));
+        );
+        await _recurringDao.addMapping(mappingEntry);
       }
     }
 
-    if (mappingsToSave.isNotEmpty) {
-      await _isar.writeTxn(() async {
-        await _isar.productMappings.putAll(mappingsToSave);
-      });
-    }
+    // 2. Zapis Wydatku i Pozycji (Drift)
+    // Lista pozycji do wstawienia
+    final expenseItems = _items.map((i) => ExpenseItemsCompanion.insert(
+      expenseId: 0, // Placeholder, zostanie nadpisany w transakcji
+      name: i.name,
+      rawId: drift.Value(i.rawId),
+      amount: i.amount,
+      categoryName: drift.Value(i.category),
+    )).toList();
 
-    final expense = Expense(
+    await context.read<ExpensesState>().addExpense(
       title: _titleController.text,
       amount: _currentTotal,
-      category: 'Zakupy',
       date: DateTime.now(),
-      items: _items,
+      category: 'Zakupy', // Główna kategoria paragonu
+      items: expenseItems,
     );
-
-    await context.read<ExpensesState>().addExpense(expense);
 
     if (mounted) {
       Navigator.of(context).popUntil((route) => route.isFirst); 
@@ -110,7 +115,6 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
       appBar: AppBar(title: const Text('Weryfikacja Paragonu')),
       body: Column(
         children: [
-          // Nagłówek
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Card(
@@ -140,34 +144,24 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
             ),
           ),
           
-          // Lista pozycji
           Expanded(
             child: ListView.builder(
               itemCount: _items.length,
               itemBuilder: (context, index) {
                 final item = _items[index];
                 
-                // KLUCZ DO ROZWIĄZANIA PROBLEMU USUWANIA:
-                // Używamy ObjectKey(item), aby Flutter wiedział, że ten widget
-                // jest na sztywno przypisany do tej konkretnej instancji obiektu w pamięci.
+                // ObjectKey jest kluczowy przy usuwaniu
                 return Card(
-                  key: ObjectKey(item), // <--- TO NAPRAWIA BŁĄD USUWANIA
+                  key: ObjectKey(item),
                   margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   child: ExpansionTile(
                     title: Row(
                       children: [
                         Expanded(
                           child: TextFormField(
-                            // Używamy initialValue, bo przy ObjectKey widget i tak zostanie
-                            // stworzony od nowa, jeśli dane się zmienią.
                             initialValue: item.name,
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              labelText: 'Nazwa produktu',
-                              isDense: true,
-                            ),
+                            decoration: const InputDecoration(border: InputBorder.none),
                             style: const TextStyle(fontWeight: FontWeight.bold),
-                            // Tu edytujemy nazwę, która zostanie zapamiętana w bazie wiedzy
                             onChanged: (val) => item.name = val,
                           ),
                         ),
@@ -177,12 +171,7 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
                             initialValue: item.amount.toStringAsFixed(2),
                             keyboardType: TextInputType.number,
                             textAlign: TextAlign.end,
-                            decoration: const InputDecoration(
-                              suffixText: ' zł', 
-                              border: InputBorder.none,
-                              labelText: 'Cena',
-                              isDense: true,
-                            ),
+                            decoration: const InputDecoration(suffixText: ' zł', border: InputBorder.none),
                             onChanged: (val) {
                               setState(() {
                                 item.amount = double.tryParse(val.replaceAll(',', '.')) ?? 0.0;
@@ -192,50 +181,28 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
                         ),
                       ],
                     ),
-                    subtitle: Text(
-                      item.category, 
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12)
-                    ),
-                    
+                    subtitle: Text(item.category, style: TextStyle(color: Colors.grey[600])),
                     children: [
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Column(
-                          children: [
-                            // Oryginalna nazwa z paragonu (dla informacji)
-                            if (item.rawId != null)
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: Text(
-                                    "Kod z paragonu: ${item.rawId}",
-                                    style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
-                                  ),
-                                ),
-                              ),
-                              
-                            CategorySelector(
-                              type: CategoryType.expense,
-                              initialValue: item.category,
-                              onChanged: (newCat) {
-                                setState(() {
-                                  item.category = newCat;
-                                });
-                              },
-                            ),
-                          ],
+                        child: CategorySelector(
+                          type: 'expense', // String!
+                          initialValue: item.category,
+                          onChanged: (newCat) {
+                            setState(() {
+                              item.category = newCat;
+                            });
+                          },
                         ),
                       ),
                       TextButton.icon(
                         onPressed: () {
                           setState(() {
-                            // Dzięki ObjectKey, to usunie właściwą kartę
                             _items.removeAt(index);
                           });
                         },
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        label: const Text('Usuń tę pozycję', style: TextStyle(color: Colors.red)),
+                        label: const Text('Usuń pozycję', style: TextStyle(color: Colors.red)),
                       )
                     ],
                   ),
@@ -244,7 +211,6 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
             ),
           ),
 
-          // Przycisk zapisu
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: SizedBox(

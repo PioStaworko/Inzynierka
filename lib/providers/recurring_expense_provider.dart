@@ -1,55 +1,52 @@
-// lib/providers/recurring_expense_provider.dart
-
 import 'package:flutter/foundation.dart';
-import 'package:isar/isar.dart';
-import '../models/recurring_expense_model.dart';
+import 'package:drift/drift.dart' as drift;
+import '../data/app_database.dart';
 
 class RecurringExpenseProvider extends ChangeNotifier {
-  final Isar isar;
+  final RecurringDao dao;
   List<RecurringExpense> _templates = [];
 
-  // Konstruktor od razu ładuje szablony
-  RecurringExpenseProvider(this.isar) {
+  RecurringExpenseProvider(this.dao) {
     _loadTemplates();
   }
 
-  // Prywatna metoda ładowania
-  void _loadTemplates() {
-    // Sortujemy po dacie następnej płatności
-    _templates = isar.recurringExpenses
-        .where()
-        .sortByNextDueDate()
-        .findAllSync();
+  Future<void> _loadTemplates() async {
+    _templates = await dao.getRecurringExpenses();
+    notifyListeners();
   }
 
-  // Publiczny getter do odczytu przez UI
   List<RecurringExpense> get allTemplates => List.unmodifiable(_templates);
 
-  // Metoda dodawania (już ją mamy, ale upewniamy się, że odświeży listę)
-  Future<void> addRecurringExpense(RecurringExpense re) async {
-    await isar.writeTxn(() async {
-      await isar.recurringExpenses.put(re);
-    });
-    // Przeładuj listę i powiadom słuchaczy
+  // Dodawanie
+  Future<void> addRecurringExpense(String title, double amount, String category, String frequency, DateTime nextDate) async {
+    final entry = RecurringExpensesCompanion.insert(
+      title: title,
+      amount: amount,
+      category: category,
+      frequency: frequency,
+      nextDueDate: nextDate,
+    );
+    await dao.addRecurringExpense(entry);
     _loadTemplates();
-    notifyListeners();
   }
 
-  // NOWA METODA: Usuwanie szablonu
+  // Usuwanie
   Future<void> deleteRecurringExpense(int templateId) async {
-    await isar.writeTxn(() async {
-      await isar.recurringExpenses.delete(templateId);
-    });
-    // Przeładuj listę i powiadom słuchaczy
+    await dao.deleteRecurringExpense(templateId);
     _loadTemplates();
-    notifyListeners();
   }
 
-  Future<void> updateRecurringExpense(RecurringExpense updatedTemplate) async {
-    await isar.writeTxn(() async {
-      await isar.recurringExpenses.put(updatedTemplate);
-    });
+  // Aktualizacja
+  Future<void> updateRecurringExpense(RecurringExpense item) async {
+    final entry = RecurringExpensesCompanion(
+      id: drift.Value(item.id),
+      title: drift.Value(item.title),
+      amount: drift.Value(item.amount),
+      category: drift.Value(item.category),
+      frequency: drift.Value(item.frequency),
+      nextDueDate: drift.Value(item.nextDueDate),
+    );
+    await dao.updateRecurringExpense(entry);
     _loadTemplates();
-    notifyListeners();
   }
 }

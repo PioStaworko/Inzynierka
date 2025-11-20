@@ -1,22 +1,3 @@
-// lib/models/income_model.dart
+// Compatibility shim: re-export Drift-generated Income
 
-import 'package:isar/isar.dart';
-
-part 'income_model.g.dart'; // Ten plik zostanie wygenerowany
-
-@collection
-class Income {
-  Id id = Isar.autoIncrement;
-
-  final String title;
-  final double amount;
-
-  @Index()
-  final DateTime date;
-
-  Income({
-    required this.title,
-    required this.amount,
-    required this.date,
-  });
-}
+export '../data/app_database.dart' show Income, IncomesCompanion;

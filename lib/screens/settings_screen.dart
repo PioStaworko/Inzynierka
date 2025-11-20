@@ -9,21 +9,33 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = context.watch<ThemeProvider>();
-    final isDark = themeProvider.themeMode == ThemeMode.dark;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Ustawienia')),
       body: ListView(
         children: [
-          SwitchListTile(
-            title: const Text('Tryb ciemny'),
-            subtitle: const Text('Włącz ciemny motyw aplikacji'),
-            value: isDark,
-            onChanged: (value) {
-              context.read<ThemeProvider>().toggleTheme(value);
-            },
-            secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
+          // Zamiast pojedynczego Switcha dajemy trójstanowy wybór (System / Jasny / Ciemny)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Consumer<ThemeProvider>(
+              builder: (context, themeProvider, _) {
+                final current = themeProvider.themeMode;
+                return ListTile(
+                  leading: const Icon(Icons.brightness_6),
+                  title: const Text('Motyw'),
+                  trailing: DropdownButton<ThemeMode>(
+                    value: current,
+                    items: const [
+                      DropdownMenuItem(value: ThemeMode.system, child: Text('Systemowy')),
+                      DropdownMenuItem(value: ThemeMode.light, child: Text('Jasny')),
+                      DropdownMenuItem(value: ThemeMode.dark, child: Text('Ciemny')),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) themeProvider.setThemeMode(v);
+                    },
+                  ),
+                );
+              },
+            ),
           ),
           const Divider(),
           // Miejsce na przyszłe opcje, np. reset danych

@@ -14,3 +14,12 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+
+
+#TODO: Cele oszczczędnościowe
+#TODO: Budżet na kategorię i powiadomienia przy przekroczeniu 
+#TODO: Ustawienie początkowego majątku przy pierwszym włączeniu
+#TODO: Ustawienie kodu pin użytkownika
+#TODO: Jakieś "Witaj XYZ - podanie imienia"
+#TODO: Export do xlsx (ewentualnie)
