@@ -65,3 +65,11 @@ class RecurringIncomes extends Table {
   TextColumn get frequency => text()();
   DateTimeColumn get nextDueDate => dateTime()();
 }
+
+class Budgets extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get category => text()(); 
+  RealColumn get amountLimit => real()();
+  TextColumn get period => text()(); 
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)(); 
+}

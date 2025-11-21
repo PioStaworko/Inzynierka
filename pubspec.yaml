@@ -23,6 +23,8 @@ dependencies:
   # Drift (SQLite) - lightweight local SQL with codegen
   drift: ^2.0.0
   sqlite3_flutter_libs: ^0.5.0
+  flutter_local_notifications: ^19.5.0
+  timezone: ^0.10.1
   
 
 dev_dependencies:
@@ -32,6 +34,12 @@ dev_dependencies:
   isar_generator: ^3.1.0+1
   build_runner: ^2.4.7
   drift_dev: ^2.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
+
+flutter_launcher_icons:
+  image_path: "assets/app_icon.png"
+  android: true
+  ios: true

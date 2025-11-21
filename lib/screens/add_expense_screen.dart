@@ -26,6 +26,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   
   DateTime? _selectedDate;
   String _selectedCategory = 'Inne'; // Domyślna kategoria
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -74,6 +75,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     if (enteredAmount == null || enteredAmount <= 0) return;
 
     final provider = context.read<ExpensesState>();
+    if (_isSaving) return; // zapobiegamy wielokrotnemu wciśnięciu
+    setState(() => _isSaving = true);
 
     if (widget.expenseToEdit != null) {
       // EDYCJA
@@ -98,6 +101,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
 
     if (mounted) Navigator.of(context).pop();
+    setState(() => _isSaving = false);
   }
 
   @override
@@ -149,9 +153,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               ),
               const SizedBox(height: 32),
               ElevatedButton.icon(
-                onPressed: _submitData,
-                icon: Icon(isEditing ? Icons.save_as : Icons.save),
-                label: Text(isEditing ? 'Zapisz zmiany' : 'Dodaj wydatek'),
+                onPressed: _isSaving ? null : _submitData,
+                icon: _isSaving ? const SizedBox(width:16, height:16, child: CircularProgressIndicator(strokeWidth:2)) : Icon(isEditing ? Icons.save_as : Icons.save),
+                label: Text(_isSaving ? 'Trwa zapisywanie...' : (isEditing ? 'Zapisz zmiany' : 'Dodaj wydatek')),
               ),
             ],
           ),

@@ -6,6 +6,7 @@ import '../screens/recurring_expenses_list_screen.dart'; // Stworzymy ten plik z
 import '../screens/recurring_income_list_screen.dart';
 import '../screens/settings_screen.dart';
 import '../providers/theme_provider.dart';
+import '../screens/budgets_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -66,6 +67,17 @@ class AppDrawer extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (ctx) => const RecurringIncomeListScreen(),
                 ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.pie_chart), 
+            title: const Text('Budżety i Cele'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (ctx) => const BudgetScreen()), 
               );
             },
           ),

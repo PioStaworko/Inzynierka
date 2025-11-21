@@ -2019,6 +2019,294 @@ class RecurringIncomesCompanion extends UpdateCompanion<RecurringIncome> {
   }
 }
 
+class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BudgetsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _categoryMeta =
+      const VerificationMeta('category');
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+      'category', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _amountLimitMeta =
+      const VerificationMeta('amountLimit');
+  @override
+  late final GeneratedColumn<double> amountLimit = GeneratedColumn<double>(
+      'amount_limit', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _periodMeta = const VerificationMeta('period');
+  @override
+  late final GeneratedColumn<String> period = GeneratedColumn<String>(
+      'period', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, category, amountLimit, period, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'budgets';
+  @override
+  VerificationContext validateIntegrity(Insertable<Budget> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('category')) {
+      context.handle(_categoryMeta,
+          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
+    } else if (isInserting) {
+      context.missing(_categoryMeta);
+    }
+    if (data.containsKey('amount_limit')) {
+      context.handle(
+          _amountLimitMeta,
+          amountLimit.isAcceptableOrUnknown(
+              data['amount_limit']!, _amountLimitMeta));
+    } else if (isInserting) {
+      context.missing(_amountLimitMeta);
+    }
+    if (data.containsKey('period')) {
+      context.handle(_periodMeta,
+          period.isAcceptableOrUnknown(data['period']!, _periodMeta));
+    } else if (isInserting) {
+      context.missing(_periodMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Budget map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Budget(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      category: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
+      amountLimit: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}amount_limit'])!,
+      period: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}period'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $BudgetsTable createAlias(String alias) {
+    return $BudgetsTable(attachedDatabase, alias);
+  }
+}
+
+class Budget extends DataClass implements Insertable<Budget> {
+  final int id;
+  final String category;
+  final double amountLimit;
+  final String period;
+  final DateTime createdAt;
+  const Budget(
+      {required this.id,
+      required this.category,
+      required this.amountLimit,
+      required this.period,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['category'] = Variable<String>(category);
+    map['amount_limit'] = Variable<double>(amountLimit);
+    map['period'] = Variable<String>(period);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  BudgetsCompanion toCompanion(bool nullToAbsent) {
+    return BudgetsCompanion(
+      id: Value(id),
+      category: Value(category),
+      amountLimit: Value(amountLimit),
+      period: Value(period),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Budget.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Budget(
+      id: serializer.fromJson<int>(json['id']),
+      category: serializer.fromJson<String>(json['category']),
+      amountLimit: serializer.fromJson<double>(json['amountLimit']),
+      period: serializer.fromJson<String>(json['period']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'category': serializer.toJson<String>(category),
+      'amountLimit': serializer.toJson<double>(amountLimit),
+      'period': serializer.toJson<String>(period),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Budget copyWith(
+          {int? id,
+          String? category,
+          double? amountLimit,
+          String? period,
+          DateTime? createdAt}) =>
+      Budget(
+        id: id ?? this.id,
+        category: category ?? this.category,
+        amountLimit: amountLimit ?? this.amountLimit,
+        period: period ?? this.period,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('Budget(')
+          ..write('id: $id, ')
+          ..write('category: $category, ')
+          ..write('amountLimit: $amountLimit, ')
+          ..write('period: $period, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, category, amountLimit, period, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Budget &&
+          other.id == this.id &&
+          other.category == this.category &&
+          other.amountLimit == this.amountLimit &&
+          other.period == this.period &&
+          other.createdAt == this.createdAt);
+}
+
+class BudgetsCompanion extends UpdateCompanion<Budget> {
+  final Value<int> id;
+  final Value<String> category;
+  final Value<double> amountLimit;
+  final Value<String> period;
+  final Value<DateTime> createdAt;
+  const BudgetsCompanion({
+    this.id = const Value.absent(),
+    this.category = const Value.absent(),
+    this.amountLimit = const Value.absent(),
+    this.period = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  BudgetsCompanion.insert({
+    this.id = const Value.absent(),
+    required String category,
+    required double amountLimit,
+    required String period,
+    this.createdAt = const Value.absent(),
+  })  : category = Value(category),
+        amountLimit = Value(amountLimit),
+        period = Value(period);
+  static Insertable<Budget> custom({
+    Expression<int>? id,
+    Expression<String>? category,
+    Expression<double>? amountLimit,
+    Expression<String>? period,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (category != null) 'category': category,
+      if (amountLimit != null) 'amount_limit': amountLimit,
+      if (period != null) 'period': period,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  BudgetsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? category,
+      Value<double>? amountLimit,
+      Value<String>? period,
+      Value<DateTime>? createdAt}) {
+    return BudgetsCompanion(
+      id: id ?? this.id,
+      category: category ?? this.category,
+      amountLimit: amountLimit ?? this.amountLimit,
+      period: period ?? this.period,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (amountLimit.present) {
+      map['amount_limit'] = Variable<double>(amountLimit.value);
+    }
+    if (period.present) {
+      map['period'] = Variable<String>(period.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BudgetsCompanion(')
+          ..write('id: $id, ')
+          ..write('category: $category, ')
+          ..write('amountLimit: $amountLimit, ')
+          ..write('period: $period, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDb extends GeneratedDatabase {
   _$AppDb(QueryExecutor e) : super(e);
   late final $ExpensesTable expenses = $ExpensesTable(this);
@@ -2031,10 +2319,12 @@ abstract class _$AppDb extends GeneratedDatabase {
       $RecurringExpensesTable(this);
   late final $RecurringIncomesTable recurringIncomes =
       $RecurringIncomesTable(this);
+  late final $BudgetsTable budgets = $BudgetsTable(this);
   late final ExpensesDao expensesDao = ExpensesDao(this as AppDb);
   late final IncomesDao incomesDao = IncomesDao(this as AppDb);
   late final CategoriesDao categoriesDao = CategoriesDao(this as AppDb);
   late final RecurringDao recurringDao = RecurringDao(this as AppDb);
+  late final BudgetsDao budgetsDao = BudgetsDao(this as AppDb);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2046,7 +2336,8 @@ abstract class _$AppDb extends GeneratedDatabase {
         incomes,
         productMappings,
         recurringExpenses,
-        recurringIncomes
+        recurringIncomes,
+        budgets
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -2078,4 +2369,9 @@ mixin _$RecurringDaoMixin on DatabaseAccessor<AppDb> {
   $RecurringIncomesTable get recurringIncomes =>
       attachedDatabase.recurringIncomes;
   $ProductMappingsTable get productMappings => attachedDatabase.productMappings;
+}
+mixin _$BudgetsDaoMixin on DatabaseAccessor<AppDb> {
+  $BudgetsTable get budgets => attachedDatabase.budgets;
+  $ExpensesTable get expenses => attachedDatabase.expenses;
+  $ExpenseItemsTable get expenseItems => attachedDatabase.expenseItems;
 }

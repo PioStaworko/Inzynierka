@@ -12,12 +12,17 @@ import 'providers/income_provider.dart';
 import 'providers/recurring_expense_provider.dart';
 import 'providers/recurring_income_provider.dart'; 
 import 'providers/theme_provider.dart';
+
 import 'providers/category_provider.dart';
 
 import 'screens/home_screen.dart';
 
+
+import 'services/notification_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init();
 
   // Inicjalizacja bazy Drift
   final db = AppDb();
@@ -37,23 +42,23 @@ class MyApp extends StatelessWidget {
         // Udostępniamy bazę danych
         Provider<AppDb>.value(value: appDb),
         
-        // Providery otrzymują odpowiednie DAO
-        ChangeNotifierProvider(create: (_) => ExpensesState(appDb.expensesDao)),
+        ChangeNotifierProvider(create: (_) => ExpensesState(appDb.expensesDao, appDb.budgetsDao)),
         
-        // IncomeProvider potrzebuje dwóch DAO
         ChangeNotifierProvider(create: (_) => IncomeProvider(appDb.incomesDao, appDb.recurringDao)),
-        
-        // Reszta providerów (musisz je dostosować analogicznie do IncomeProvider)
+
         ChangeNotifierProvider(create: (_) => RecurringExpenseProvider(appDb.recurringDao)),
         ChangeNotifierProvider(create: (_) => RecurringIncomeProvider(appDb.recurringDao)),
         ChangeNotifierProvider(create: (_) => CategoryProvider(appDb.categoriesDao)),
-        
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
-          return MaterialApp(
+            return _LifecycleHandler(
+            child: MaterialApp(
             title: 'Savings App',
+            routes: {
+              '/home': (ctx) => const MyHomePage(),
+            },
             // Primary color/seed for the app - use dark green
             theme: ThemeData.from(
               colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF01743E)),
@@ -68,9 +73,52 @@ class MyApp extends StatelessWidget {
             ),
             themeMode: themeProvider.themeMode,
             home: const MyHomePage(),
+            ),
+            onPaused: () {
+              // When the app goes to background, process pending budget checks so
+              // notifications will be shown after leaving the app.
+              try {
+                final expenses = Provider.of<ExpensesState>(context, listen: false);
+                expenses.processPendingBudgetChecks();
+              } catch (_) {}
+            },
           );
         },
       ),
     );
   }
+}
+
+class _LifecycleHandler extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onPaused;
+  const _LifecycleHandler({required this.child, this.onPaused});
+
+  @override
+  State<_LifecycleHandler> createState() => _LifecycleHandlerState();
+}
+
+class _LifecycleHandlerState extends State<_LifecycleHandler> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused) {
+      widget.onPaused?.call();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
