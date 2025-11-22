@@ -18,8 +18,7 @@ samples, guidance on mobile development, and a full API reference.
 
 
 #TODO: Cele oszczczędnościowe
-#TODO: Budżet na kategorię i powiadomienia przy przekroczeniu 
-#TODO: Ustawienie początkowego majątku przy pierwszym włączeniu
-#TODO: Ustawienie kodu pin użytkownika
+#TODO: Budżet na kategorię i powiadomienia przy przekroczeniu       DONE
+#TODO: Ustawienie początkowego majątku przy pierwszym włączeniu     DONE
 #TODO: Jakieś "Witaj XYZ - podanie imienia"
 #TODO: Export do xlsx (ewentualnie)

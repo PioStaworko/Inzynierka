@@ -12,10 +12,12 @@ import 'providers/income_provider.dart';
 import 'providers/recurring_expense_provider.dart';
 import 'providers/recurring_income_provider.dart'; 
 import 'providers/theme_provider.dart';
+import 'providers/starting_balance_provider.dart';
 
 import 'providers/category_provider.dart';
 
 import 'screens/home_screen.dart';
+import 'screens/initial_balance_screen.dart';
 
 
 import 'services/notification_service.dart';
@@ -50,6 +52,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => RecurringIncomeProvider(appDb.recurringDao)),
         ChangeNotifierProvider(create: (_) => CategoryProvider(appDb.categoriesDao)),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => StartingBalanceProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -58,6 +61,7 @@ class MyApp extends StatelessWidget {
             title: 'Savings App',
             routes: {
               '/home': (ctx) => const MyHomePage(),
+              '/initial_balance': (ctx) => const InitialBalanceScreen(),
             },
             // Primary color/seed for the app - use dark green
             theme: ThemeData.from(
@@ -72,7 +76,14 @@ class MyApp extends StatelessWidget {
               appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF01743E)),
             ),
             themeMode: themeProvider.themeMode,
-            home: const MyHomePage(),
+            home: Builder(
+              builder: (ctx) {
+                final sb = Provider.of<StartingBalanceProvider>(ctx);
+                if (!sb.loaded) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+                if (!sb.saved) return const InitialBalanceScreen();
+                return const MyHomePage();
+              },
+            ),
             ),
             onPaused: () {
               // When the app goes to background, process pending budget checks so

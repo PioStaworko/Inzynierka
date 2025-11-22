@@ -1,5 +1,6 @@
 // lib/services/notification_service.dart
 
+import 'dart:io' show Platform;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
@@ -11,16 +12,28 @@ class NotificationService {
 
   Future<void> init() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    // const iosSettings = DarwinInitializationSettings(); // Jeśli robisz też na iOS
+    // Możesz dodać iOS/macOS/linux jeśli potrzebujesz
 
-    const settings = InitializationSettings(android: androidSettings);
+    // WindowsInitializationSettings nie jest const, dlatego budujemy InitializationSettings
+    final windowsSettings = WindowsInitializationSettings(
+      appName: 'Savings App',
+      appUserModelId: 'com.piostaworko.savings_app',
+      guid: '2f4b2e6b-8f7c-4f6a-9f3e-1c2b3a4d5e6f',
+    );
+
+    final settings = InitializationSettings(
+      android: androidSettings,
+      windows: windowsSettings,
+    );
 
     await _notifications.initialize(settings);
-    
-    // WAŻNE: Od Androida 13 trzeba poprosić o uprawnienia
-    await _notifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+
+    // WAŻNE: Od Androida 13 trzeba poprosić o uprawnienia tylko na Androidzie
+    if (Platform.isAndroid) {
+      await _notifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    }
   }
 
   Future<void> showNotification(int id, String title, String body) async {

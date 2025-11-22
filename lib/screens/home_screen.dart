@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../providers/expenses_provider.dart';
 import '../providers/income_provider.dart';
 import '../providers/category_provider.dart'; // provider kategorii
+import '../providers/starting_balance_provider.dart';
 import '../data/app_database.dart';
 
 import '../widgets/pie_chart_widget.dart';
@@ -140,7 +141,8 @@ class _MyHomePageState extends State<MyHomePage> {
     final totals = _computeTotalsForRange(expenseState, _selectedRange);
     final totalExpenses = totals.values.fold(0.0, (sum, item) => sum + item);
     final totalIncomes = incomeState.totalIncome;
-    final balance = totalIncomes - totalExpenses;
+    final starting = context.watch<StartingBalanceProvider>().total;
+    final balance = starting + totalIncomes - totalExpenses;
 
     // === ŁĄCZENIE LIST I SORTOWANIE ===
     // Zamieniamy ExpenseWithItems na Expense (nagłówek), żeby ułatwić renderowanie
