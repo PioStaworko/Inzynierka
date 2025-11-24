@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:drift/drift.dart' as drift;
+import '../providers/category_provider.dart';
 
 // IMPORT KLAS DRIFT (Zamiast ../models/expense_model.dart)
 import '../data/app_database.dart'; 
@@ -36,8 +38,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       _titleController = TextEditingController(text: e.title);
       _amountController = TextEditingController(text: e.amount.toString());
       _selectedDate = e.date;
-      // W Drift kategoria jest w polu categoryName (zgodnie z tabelą)
-      _selectedCategory = e.categoryName; 
+      // Resolve category name from id using CategoryProvider
+      try {
+        final catProv = Provider.of<CategoryProvider>(context, listen: false);
+        _selectedCategory = catProv.getNameForId(e.categoryId);
+      } catch (_) {
+        _selectedCategory = 'Inne';
+      }
     } else {
       _titleController = TextEditingController();
       _amountController = TextEditingController();
@@ -81,11 +88,21 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     if (widget.expenseToEdit != null) {
       // EDYCJA
       // Tworzymy zmodyfikowany obiekt Expense (Drift generuje metodę copyWith)
+      // Resolve selected category name to id (create category if missing)
+      final catProv = Provider.of<CategoryProvider>(context, listen: false);
+      int? selectedId;
+      try {
+        selectedId = catProv.expenseCategories.firstWhere((c) => c.name == _selectedCategory).id;
+      } catch (_) {
+        await catProv.addCategory(_selectedCategory, 'expense', Colors.grey);
+        selectedId = catProv.expenseCategories.firstWhere((c) => c.name == _selectedCategory).id;
+      }
+
       final updatedExpense = widget.expenseToEdit!.copyWith(
         title: _titleController.text,
         amount: enteredAmount,
-        categoryName: _selectedCategory,
         date: _selectedDate!,
+        categoryId: drift.Value(selectedId),
       );
       await provider.updateExpense(updatedExpense);
     } else {

@@ -13,6 +13,7 @@ import 'providers/recurring_expense_provider.dart';
 import 'providers/recurring_income_provider.dart'; 
 import 'providers/theme_provider.dart';
 import 'providers/starting_balance_provider.dart';
+import 'providers/savings_goals_provider.dart';
 
 import 'providers/category_provider.dart';
 
@@ -44,15 +45,16 @@ class MyApp extends StatelessWidget {
         // Udostępniamy bazę danych
         Provider<AppDb>.value(value: appDb),
         
-        ChangeNotifierProvider(create: (_) => ExpensesState(appDb.expensesDao, appDb.budgetsDao)),
+        ChangeNotifierProvider(create: (_) => ExpensesState(appDb.expensesDao, appDb.budgetsDao, appDb.categoriesDao)),
         
         ChangeNotifierProvider(create: (_) => IncomeProvider(appDb.incomesDao, appDb.recurringDao)),
 
-        ChangeNotifierProvider(create: (_) => RecurringExpenseProvider(appDb.recurringDao)),
+        ChangeNotifierProvider(create: (_) => RecurringExpenseProvider(appDb.recurringDao, appDb.categoriesDao)),
         ChangeNotifierProvider(create: (_) => RecurringIncomeProvider(appDb.recurringDao)),
         ChangeNotifierProvider(create: (_) => CategoryProvider(appDb.categoriesDao)),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => StartingBalanceProvider()),
+        ChangeNotifierProvider(create: (_) => SavingsGoalsProvider(appDb)),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

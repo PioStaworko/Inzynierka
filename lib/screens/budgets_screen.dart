@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:drift/drift.dart' as drift;
 import '../data/app_database.dart'; // Import klas Drift
 import '../providers/category_provider.dart';
 import '../widgets/category_selector.dart'; // Użyjemy do wyboru kategorii
@@ -78,7 +79,8 @@ class _BudgetCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  item.budget.category,
+                  // Resolve categoryId -> name
+                  Provider.of<CategoryProvider>(context, listen: false).getNameForId(item.budget.categoryId),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 IconButton(
@@ -188,8 +190,17 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                 final amount = double.tryParse(_amountController.text);
                 if (amount != null && amount > 0) {
                   final dao = context.read<AppDb>().budgetsDao;
+                  // Resolve selected category name -> id (create if missing)
+                  final catProv = Provider.of<CategoryProvider>(context, listen: false);
+                  int? cid;
+                  try {
+                    cid = catProv.expenseCategories.firstWhere((c) => c.name == _selectedCategory).id;
+                  } catch (_) {
+                    await catProv.addCategory(_selectedCategory, 'expense', Colors.grey);
+                    cid = catProv.expenseCategories.firstWhere((c) => c.name == _selectedCategory).id;
+                  }
                   await dao.addBudget(BudgetsCompanion.insert(
-                    category: _selectedCategory,
+                    categoryId: drift.Value(cid),
                     amountLimit: amount,
                     period: _period,
                   ));

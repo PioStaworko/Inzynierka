@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show ChangeNotifier, kDebugMode;
 import 'package:drift/drift.dart' as drift;
 import '../data/app_database.dart'; 
 import '../services/notification_service.dart'; // Dodaj import serwisu
@@ -6,14 +6,27 @@ import '../services/notification_service.dart'; // Dodaj import serwisu
 class ExpensesState extends ChangeNotifier {
   final ExpensesDao dao;
   final BudgetsDao budgetsDao;
+  final CategoriesDao categoriesDao;
   
   // Przechowujemy listę połączonych obiektów (Wydatek + Lista Produktów)
   List<ExpenseWithItems> _expenses = [];
   // Pending budget deltas collected while the app is active.
   final Map<String, double> _pendingBudgetDeltas = {};
 
-  ExpensesState(this.dao, this.budgetsDao) {
+  ExpensesState(this.dao, this.budgetsDao, this.categoriesDao) {
     _init();
+    _loadCategoryCache();
+  }
+
+  // Simple in-memory cache of category id -> name to avoid async calls in getters
+  final Map<int, String> _categoryCache = {};
+
+  Future<void> _loadCategoryCache() async {
+    final all = await categoriesDao.getAllCategories();
+    _categoryCache.clear();
+    for (final c in all) {
+      _categoryCache[c.id] = c.name;
+    }
   }
 
   void _init() {
@@ -37,13 +50,24 @@ class ExpensesState extends ChangeNotifier {
       if (entry.items.isNotEmpty) {
         // Jeśli to paragon z pozycjami - sumujemy kategorie pozycji
         for (var item in entry.items) {
-          // Używamy pola 'categoryName' zgodnie z Twoim plikiem tables.dart
-          map[item.categoryName] = (map[item.categoryName] ?? 0) + item.amount;
+          // Prefer categoryId if present, otherwise fallback to parent expense category or 'Inne'
+          String catName;
+          if (item.categoryId != null) {
+            catName = _categoryCache[item.categoryId] ?? 'Inne';
+          } else if (entry.expense.categoryId != null) {
+            catName = _categoryCache[entry.expense.categoryId] ?? 'Inne';
+          } else {
+            catName = 'Inne';
+          }
+          map[catName] = (map[catName] ?? 0) + item.amount;
         }
       } else {
         // Jeśli to zwykły wydatek - bierzemy kategorię główną
         // entry.expense to nagłówek (z tabeli Expenses)
-        map[entry.expense.categoryName] = (map[entry.expense.categoryName] ?? 0) + entry.expense.amount;
+        final catName = entry.expense.categoryId != null
+            ? (_categoryCache[entry.expense.categoryId] ?? 'Inne')
+            : 'Inne';
+        map[catName] = (map[catName] ?? 0) + entry.expense.amount;
       }
     }
     return map;
@@ -59,11 +83,32 @@ class ExpensesState extends ChangeNotifier {
   }) async {
     
     // 1. Dodaj wydatek (Standardowo)
+    // Resolve category name to id (create category if missing)
+    final allCats = await categoriesDao.getAllCategories();
+    Category? existing;
+    try {
+      existing = allCats.firstWhere((c) => c.name == category);
+    } catch (_) {
+      existing = null;
+    }
+    int? catId = existing?.id;
+    if (catId == null) {
+      await categoriesDao.insertCategory(CategoriesCompanion.insert(name: category, type: 'expense', colorValue: 4286578816));
+      final refreshed = await categoriesDao.getAllCategories();
+      try {
+        catId = refreshed.firstWhere((c) => c.name == category).id;
+      } catch (_) {
+        catId = null;
+      }
+      // refresh cache
+      if (catId != null) _categoryCache[catId] = category;
+    }
+
     final expenseCompanion = ExpensesCompanion.insert(
       title: title,
       amount: amount,
       date: date,
-      categoryName: category,
+      categoryId: drift.Value(catId),
     );
     await dao.insertExpenseWithItems(expenseCompanion, items ?? []);
 
@@ -113,9 +158,10 @@ class ExpensesState extends ChangeNotifier {
     
     // Jeśli wcześniej było poniżej progu, a teraz jest powyżej (lub równo)
     if (oldSpent < thresholdAmount && newSpent >= thresholdAmount) {
+      final catName = budget.categoryId != null ? (_categoryCache[budget.categoryId] ?? 'Inne') : 'Inne';
       NotificationService().showNotification(
         budget.id * 100 + percent, // Unikalne ID powiadomienia
-        'Uwaga! Budżet: ${budget.category}',
+        'Uwaga! Budżet: $catName',
         'Wykorzystano $percent% budżetu (${budget.period}). Wydano: ${newSpent.toStringAsFixed(2)} zł z ${limit.toStringAsFixed(2)} zł.',
       );
     }
@@ -153,7 +199,7 @@ class ExpensesState extends ChangeNotifier {
       id: drift.Value(expense.id),
       title: drift.Value(expense.title),
       amount: drift.Value(expense.amount),
-      categoryName: drift.Value(expense.categoryName),
+      categoryId: drift.Value(expense.categoryId),
       date: drift.Value(expense.date),
     );
     await dao.updateExpense(companion);

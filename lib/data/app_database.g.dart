@@ -3,619 +3,6 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
-class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ExpensesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-      'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _titleMeta = const VerificationMeta('title');
-  @override
-  late final GeneratedColumn<String> title = GeneratedColumn<String>(
-      'title', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
-  @override
-  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
-      'amount', aliasedName, false,
-      type: DriftSqlType.double, requiredDuringInsert: true);
-  static const VerificationMeta _dateMeta = const VerificationMeta('date');
-  @override
-  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
-      'date', aliasedName, false,
-      type: DriftSqlType.dateTime, requiredDuringInsert: true);
-  static const VerificationMeta _categoryNameMeta =
-      const VerificationMeta('categoryName');
-  @override
-  late final GeneratedColumn<String> categoryName = GeneratedColumn<String>(
-      'category_name', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  @override
-  List<GeneratedColumn> get $columns => [id, title, amount, date, categoryName];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'expenses';
-  @override
-  VerificationContext validateIntegrity(Insertable<Expense> instance,
-      {bool isInserting = false}) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('title')) {
-      context.handle(
-          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
-    } else if (isInserting) {
-      context.missing(_titleMeta);
-    }
-    if (data.containsKey('amount')) {
-      context.handle(_amountMeta,
-          amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
-    } else if (isInserting) {
-      context.missing(_amountMeta);
-    }
-    if (data.containsKey('date')) {
-      context.handle(
-          _dateMeta, date.isAcceptableOrUnknown(data['date']!, _dateMeta));
-    } else if (isInserting) {
-      context.missing(_dateMeta);
-    }
-    if (data.containsKey('category_name')) {
-      context.handle(
-          _categoryNameMeta,
-          categoryName.isAcceptableOrUnknown(
-              data['category_name']!, _categoryNameMeta));
-    } else if (isInserting) {
-      context.missing(_categoryNameMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  Expense map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Expense(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      title: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
-      amount: attachedDatabase.typeMapping
-          .read(DriftSqlType.double, data['${effectivePrefix}amount'])!,
-      date: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}date'])!,
-      categoryName: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}category_name'])!,
-    );
-  }
-
-  @override
-  $ExpensesTable createAlias(String alias) {
-    return $ExpensesTable(attachedDatabase, alias);
-  }
-}
-
-class Expense extends DataClass implements Insertable<Expense> {
-  final int id;
-  final String title;
-  final double amount;
-  final DateTime date;
-  final String categoryName;
-  const Expense(
-      {required this.id,
-      required this.title,
-      required this.amount,
-      required this.date,
-      required this.categoryName});
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['title'] = Variable<String>(title);
-    map['amount'] = Variable<double>(amount);
-    map['date'] = Variable<DateTime>(date);
-    map['category_name'] = Variable<String>(categoryName);
-    return map;
-  }
-
-  ExpensesCompanion toCompanion(bool nullToAbsent) {
-    return ExpensesCompanion(
-      id: Value(id),
-      title: Value(title),
-      amount: Value(amount),
-      date: Value(date),
-      categoryName: Value(categoryName),
-    );
-  }
-
-  factory Expense.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Expense(
-      id: serializer.fromJson<int>(json['id']),
-      title: serializer.fromJson<String>(json['title']),
-      amount: serializer.fromJson<double>(json['amount']),
-      date: serializer.fromJson<DateTime>(json['date']),
-      categoryName: serializer.fromJson<String>(json['categoryName']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'title': serializer.toJson<String>(title),
-      'amount': serializer.toJson<double>(amount),
-      'date': serializer.toJson<DateTime>(date),
-      'categoryName': serializer.toJson<String>(categoryName),
-    };
-  }
-
-  Expense copyWith(
-          {int? id,
-          String? title,
-          double? amount,
-          DateTime? date,
-          String? categoryName}) =>
-      Expense(
-        id: id ?? this.id,
-        title: title ?? this.title,
-        amount: amount ?? this.amount,
-        date: date ?? this.date,
-        categoryName: categoryName ?? this.categoryName,
-      );
-  @override
-  String toString() {
-    return (StringBuffer('Expense(')
-          ..write('id: $id, ')
-          ..write('title: $title, ')
-          ..write('amount: $amount, ')
-          ..write('date: $date, ')
-          ..write('categoryName: $categoryName')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(id, title, amount, date, categoryName);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Expense &&
-          other.id == this.id &&
-          other.title == this.title &&
-          other.amount == this.amount &&
-          other.date == this.date &&
-          other.categoryName == this.categoryName);
-}
-
-class ExpensesCompanion extends UpdateCompanion<Expense> {
-  final Value<int> id;
-  final Value<String> title;
-  final Value<double> amount;
-  final Value<DateTime> date;
-  final Value<String> categoryName;
-  const ExpensesCompanion({
-    this.id = const Value.absent(),
-    this.title = const Value.absent(),
-    this.amount = const Value.absent(),
-    this.date = const Value.absent(),
-    this.categoryName = const Value.absent(),
-  });
-  ExpensesCompanion.insert({
-    this.id = const Value.absent(),
-    required String title,
-    required double amount,
-    required DateTime date,
-    required String categoryName,
-  })  : title = Value(title),
-        amount = Value(amount),
-        date = Value(date),
-        categoryName = Value(categoryName);
-  static Insertable<Expense> custom({
-    Expression<int>? id,
-    Expression<String>? title,
-    Expression<double>? amount,
-    Expression<DateTime>? date,
-    Expression<String>? categoryName,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (title != null) 'title': title,
-      if (amount != null) 'amount': amount,
-      if (date != null) 'date': date,
-      if (categoryName != null) 'category_name': categoryName,
-    });
-  }
-
-  ExpensesCompanion copyWith(
-      {Value<int>? id,
-      Value<String>? title,
-      Value<double>? amount,
-      Value<DateTime>? date,
-      Value<String>? categoryName}) {
-    return ExpensesCompanion(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      amount: amount ?? this.amount,
-      date: date ?? this.date,
-      categoryName: categoryName ?? this.categoryName,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (title.present) {
-      map['title'] = Variable<String>(title.value);
-    }
-    if (amount.present) {
-      map['amount'] = Variable<double>(amount.value);
-    }
-    if (date.present) {
-      map['date'] = Variable<DateTime>(date.value);
-    }
-    if (categoryName.present) {
-      map['category_name'] = Variable<String>(categoryName.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExpensesCompanion(')
-          ..write('id: $id, ')
-          ..write('title: $title, ')
-          ..write('amount: $amount, ')
-          ..write('date: $date, ')
-          ..write('categoryName: $categoryName')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $ExpenseItemsTable extends ExpenseItems
-    with TableInfo<$ExpenseItemsTable, ExpenseItem> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ExpenseItemsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-      'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _expenseIdMeta =
-      const VerificationMeta('expenseId');
-  @override
-  late final GeneratedColumn<int> expenseId = GeneratedColumn<int>(
-      'expense_id', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'REFERENCES expenses (id) ON DELETE CASCADE'));
-  static const VerificationMeta _nameMeta = const VerificationMeta('name');
-  @override
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _rawIdMeta = const VerificationMeta('rawId');
-  @override
-  late final GeneratedColumn<String> rawId = GeneratedColumn<String>(
-      'raw_id', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
-  @override
-  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
-      'amount', aliasedName, false,
-      type: DriftSqlType.double, requiredDuringInsert: true);
-  static const VerificationMeta _categoryNameMeta =
-      const VerificationMeta('categoryName');
-  @override
-  late final GeneratedColumn<String> categoryName = GeneratedColumn<String>(
-      'category_name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      defaultValue: const Constant('Inne'));
-  @override
-  List<GeneratedColumn> get $columns =>
-      [id, expenseId, name, rawId, amount, categoryName];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'expense_items';
-  @override
-  VerificationContext validateIntegrity(Insertable<ExpenseItem> instance,
-      {bool isInserting = false}) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('expense_id')) {
-      context.handle(_expenseIdMeta,
-          expenseId.isAcceptableOrUnknown(data['expense_id']!, _expenseIdMeta));
-    } else if (isInserting) {
-      context.missing(_expenseIdMeta);
-    }
-    if (data.containsKey('name')) {
-      context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
-    } else if (isInserting) {
-      context.missing(_nameMeta);
-    }
-    if (data.containsKey('raw_id')) {
-      context.handle(
-          _rawIdMeta, rawId.isAcceptableOrUnknown(data['raw_id']!, _rawIdMeta));
-    }
-    if (data.containsKey('amount')) {
-      context.handle(_amountMeta,
-          amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
-    } else if (isInserting) {
-      context.missing(_amountMeta);
-    }
-    if (data.containsKey('category_name')) {
-      context.handle(
-          _categoryNameMeta,
-          categoryName.isAcceptableOrUnknown(
-              data['category_name']!, _categoryNameMeta));
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  ExpenseItem map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ExpenseItem(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      expenseId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}expense_id'])!,
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
-      rawId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}raw_id']),
-      amount: attachedDatabase.typeMapping
-          .read(DriftSqlType.double, data['${effectivePrefix}amount'])!,
-      categoryName: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}category_name'])!,
-    );
-  }
-
-  @override
-  $ExpenseItemsTable createAlias(String alias) {
-    return $ExpenseItemsTable(attachedDatabase, alias);
-  }
-}
-
-class ExpenseItem extends DataClass implements Insertable<ExpenseItem> {
-  final int id;
-  final int expenseId;
-  final String name;
-  final String? rawId;
-  final double amount;
-  final String categoryName;
-  const ExpenseItem(
-      {required this.id,
-      required this.expenseId,
-      required this.name,
-      this.rawId,
-      required this.amount,
-      required this.categoryName});
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['expense_id'] = Variable<int>(expenseId);
-    map['name'] = Variable<String>(name);
-    if (!nullToAbsent || rawId != null) {
-      map['raw_id'] = Variable<String>(rawId);
-    }
-    map['amount'] = Variable<double>(amount);
-    map['category_name'] = Variable<String>(categoryName);
-    return map;
-  }
-
-  ExpenseItemsCompanion toCompanion(bool nullToAbsent) {
-    return ExpenseItemsCompanion(
-      id: Value(id),
-      expenseId: Value(expenseId),
-      name: Value(name),
-      rawId:
-          rawId == null && nullToAbsent ? const Value.absent() : Value(rawId),
-      amount: Value(amount),
-      categoryName: Value(categoryName),
-    );
-  }
-
-  factory ExpenseItem.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ExpenseItem(
-      id: serializer.fromJson<int>(json['id']),
-      expenseId: serializer.fromJson<int>(json['expenseId']),
-      name: serializer.fromJson<String>(json['name']),
-      rawId: serializer.fromJson<String?>(json['rawId']),
-      amount: serializer.fromJson<double>(json['amount']),
-      categoryName: serializer.fromJson<String>(json['categoryName']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'expenseId': serializer.toJson<int>(expenseId),
-      'name': serializer.toJson<String>(name),
-      'rawId': serializer.toJson<String?>(rawId),
-      'amount': serializer.toJson<double>(amount),
-      'categoryName': serializer.toJson<String>(categoryName),
-    };
-  }
-
-  ExpenseItem copyWith(
-          {int? id,
-          int? expenseId,
-          String? name,
-          Value<String?> rawId = const Value.absent(),
-          double? amount,
-          String? categoryName}) =>
-      ExpenseItem(
-        id: id ?? this.id,
-        expenseId: expenseId ?? this.expenseId,
-        name: name ?? this.name,
-        rawId: rawId.present ? rawId.value : this.rawId,
-        amount: amount ?? this.amount,
-        categoryName: categoryName ?? this.categoryName,
-      );
-  @override
-  String toString() {
-    return (StringBuffer('ExpenseItem(')
-          ..write('id: $id, ')
-          ..write('expenseId: $expenseId, ')
-          ..write('name: $name, ')
-          ..write('rawId: $rawId, ')
-          ..write('amount: $amount, ')
-          ..write('categoryName: $categoryName')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode =>
-      Object.hash(id, expenseId, name, rawId, amount, categoryName);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ExpenseItem &&
-          other.id == this.id &&
-          other.expenseId == this.expenseId &&
-          other.name == this.name &&
-          other.rawId == this.rawId &&
-          other.amount == this.amount &&
-          other.categoryName == this.categoryName);
-}
-
-class ExpenseItemsCompanion extends UpdateCompanion<ExpenseItem> {
-  final Value<int> id;
-  final Value<int> expenseId;
-  final Value<String> name;
-  final Value<String?> rawId;
-  final Value<double> amount;
-  final Value<String> categoryName;
-  const ExpenseItemsCompanion({
-    this.id = const Value.absent(),
-    this.expenseId = const Value.absent(),
-    this.name = const Value.absent(),
-    this.rawId = const Value.absent(),
-    this.amount = const Value.absent(),
-    this.categoryName = const Value.absent(),
-  });
-  ExpenseItemsCompanion.insert({
-    this.id = const Value.absent(),
-    required int expenseId,
-    required String name,
-    this.rawId = const Value.absent(),
-    required double amount,
-    this.categoryName = const Value.absent(),
-  })  : expenseId = Value(expenseId),
-        name = Value(name),
-        amount = Value(amount);
-  static Insertable<ExpenseItem> custom({
-    Expression<int>? id,
-    Expression<int>? expenseId,
-    Expression<String>? name,
-    Expression<String>? rawId,
-    Expression<double>? amount,
-    Expression<String>? categoryName,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (expenseId != null) 'expense_id': expenseId,
-      if (name != null) 'name': name,
-      if (rawId != null) 'raw_id': rawId,
-      if (amount != null) 'amount': amount,
-      if (categoryName != null) 'category_name': categoryName,
-    });
-  }
-
-  ExpenseItemsCompanion copyWith(
-      {Value<int>? id,
-      Value<int>? expenseId,
-      Value<String>? name,
-      Value<String?>? rawId,
-      Value<double>? amount,
-      Value<String>? categoryName}) {
-    return ExpenseItemsCompanion(
-      id: id ?? this.id,
-      expenseId: expenseId ?? this.expenseId,
-      name: name ?? this.name,
-      rawId: rawId ?? this.rawId,
-      amount: amount ?? this.amount,
-      categoryName: categoryName ?? this.categoryName,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (expenseId.present) {
-      map['expense_id'] = Variable<int>(expenseId.value);
-    }
-    if (name.present) {
-      map['name'] = Variable<String>(name.value);
-    }
-    if (rawId.present) {
-      map['raw_id'] = Variable<String>(rawId.value);
-    }
-    if (amount.present) {
-      map['amount'] = Variable<double>(amount.value);
-    }
-    if (categoryName.present) {
-      map['category_name'] = Variable<String>(categoryName.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExpenseItemsCompanion(')
-          ..write('id: $id, ')
-          ..write('expenseId: $expenseId, ')
-          ..write('name: $name, ')
-          ..write('rawId: $rawId, ')
-          ..write('amount: $amount, ')
-          ..write('categoryName: $categoryName')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $CategoriesTable extends Categories
     with TableInfo<$CategoriesTable, Category> {
   @override
@@ -863,6 +250,592 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
           ..write('name: $name, ')
           ..write('type: $type, ')
           ..write('colorValue: $colorValue')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExpensesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+      'amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+      'date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _categoryIdMeta =
+      const VerificationMeta('categoryId');
+  @override
+  late final GeneratedColumn<int> categoryId = GeneratedColumn<int>(
+      'category_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES categories (id)'));
+  @override
+  List<GeneratedColumn> get $columns => [id, title, amount, date, categoryId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'expenses';
+  @override
+  VerificationContext validateIntegrity(Insertable<Expense> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(_amountMeta,
+          amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+          _dateMeta, date.isAcceptableOrUnknown(data['date']!, _dateMeta));
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+          _categoryIdMeta,
+          categoryId.isAcceptableOrUnknown(
+              data['category_id']!, _categoryIdMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Expense map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Expense(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
+      amount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}amount'])!,
+      date: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}date'])!,
+      categoryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}category_id']),
+    );
+  }
+
+  @override
+  $ExpensesTable createAlias(String alias) {
+    return $ExpensesTable(attachedDatabase, alias);
+  }
+}
+
+class Expense extends DataClass implements Insertable<Expense> {
+  final int id;
+  final String title;
+  final double amount;
+  final DateTime date;
+  final int? categoryId;
+  const Expense(
+      {required this.id,
+      required this.title,
+      required this.amount,
+      required this.date,
+      this.categoryId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['title'] = Variable<String>(title);
+    map['amount'] = Variable<double>(amount);
+    map['date'] = Variable<DateTime>(date);
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<int>(categoryId);
+    }
+    return map;
+  }
+
+  ExpensesCompanion toCompanion(bool nullToAbsent) {
+    return ExpensesCompanion(
+      id: Value(id),
+      title: Value(title),
+      amount: Value(amount),
+      date: Value(date),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+    );
+  }
+
+  factory Expense.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Expense(
+      id: serializer.fromJson<int>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      amount: serializer.fromJson<double>(json['amount']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      categoryId: serializer.fromJson<int?>(json['categoryId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'title': serializer.toJson<String>(title),
+      'amount': serializer.toJson<double>(amount),
+      'date': serializer.toJson<DateTime>(date),
+      'categoryId': serializer.toJson<int?>(categoryId),
+    };
+  }
+
+  Expense copyWith(
+          {int? id,
+          String? title,
+          double? amount,
+          DateTime? date,
+          Value<int?> categoryId = const Value.absent()}) =>
+      Expense(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        amount: amount ?? this.amount,
+        date: date ?? this.date,
+        categoryId: categoryId.present ? categoryId.value : this.categoryId,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('Expense(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('amount: $amount, ')
+          ..write('date: $date, ')
+          ..write('categoryId: $categoryId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, title, amount, date, categoryId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Expense &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.amount == this.amount &&
+          other.date == this.date &&
+          other.categoryId == this.categoryId);
+}
+
+class ExpensesCompanion extends UpdateCompanion<Expense> {
+  final Value<int> id;
+  final Value<String> title;
+  final Value<double> amount;
+  final Value<DateTime> date;
+  final Value<int?> categoryId;
+  const ExpensesCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.date = const Value.absent(),
+    this.categoryId = const Value.absent(),
+  });
+  ExpensesCompanion.insert({
+    this.id = const Value.absent(),
+    required String title,
+    required double amount,
+    required DateTime date,
+    this.categoryId = const Value.absent(),
+  })  : title = Value(title),
+        amount = Value(amount),
+        date = Value(date);
+  static Insertable<Expense> custom({
+    Expression<int>? id,
+    Expression<String>? title,
+    Expression<double>? amount,
+    Expression<DateTime>? date,
+    Expression<int>? categoryId,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (amount != null) 'amount': amount,
+      if (date != null) 'date': date,
+      if (categoryId != null) 'category_id': categoryId,
+    });
+  }
+
+  ExpensesCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? title,
+      Value<double>? amount,
+      Value<DateTime>? date,
+      Value<int?>? categoryId}) {
+    return ExpensesCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      date: date ?? this.date,
+      categoryId: categoryId ?? this.categoryId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<int>(categoryId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExpensesCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('amount: $amount, ')
+          ..write('date: $date, ')
+          ..write('categoryId: $categoryId')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ExpenseItemsTable extends ExpenseItems
+    with TableInfo<$ExpenseItemsTable, ExpenseItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExpenseItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _expenseIdMeta =
+      const VerificationMeta('expenseId');
+  @override
+  late final GeneratedColumn<int> expenseId = GeneratedColumn<int>(
+      'expense_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES expenses (id) ON DELETE CASCADE'));
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+      'amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _categoryIdMeta =
+      const VerificationMeta('categoryId');
+  @override
+  late final GeneratedColumn<int> categoryId = GeneratedColumn<int>(
+      'category_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES categories (id)'));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, expenseId, name, amount, categoryId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'expense_items';
+  @override
+  VerificationContext validateIntegrity(Insertable<ExpenseItem> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('expense_id')) {
+      context.handle(_expenseIdMeta,
+          expenseId.isAcceptableOrUnknown(data['expense_id']!, _expenseIdMeta));
+    } else if (isInserting) {
+      context.missing(_expenseIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(_amountMeta,
+          amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+          _categoryIdMeta,
+          categoryId.isAcceptableOrUnknown(
+              data['category_id']!, _categoryIdMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ExpenseItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExpenseItem(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      expenseId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}expense_id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      amount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}amount'])!,
+      categoryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}category_id']),
+    );
+  }
+
+  @override
+  $ExpenseItemsTable createAlias(String alias) {
+    return $ExpenseItemsTable(attachedDatabase, alias);
+  }
+}
+
+class ExpenseItem extends DataClass implements Insertable<ExpenseItem> {
+  final int id;
+  final int expenseId;
+  final String name;
+  final double amount;
+  final int? categoryId;
+  const ExpenseItem(
+      {required this.id,
+      required this.expenseId,
+      required this.name,
+      required this.amount,
+      this.categoryId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['expense_id'] = Variable<int>(expenseId);
+    map['name'] = Variable<String>(name);
+    map['amount'] = Variable<double>(amount);
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<int>(categoryId);
+    }
+    return map;
+  }
+
+  ExpenseItemsCompanion toCompanion(bool nullToAbsent) {
+    return ExpenseItemsCompanion(
+      id: Value(id),
+      expenseId: Value(expenseId),
+      name: Value(name),
+      amount: Value(amount),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+    );
+  }
+
+  factory ExpenseItem.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExpenseItem(
+      id: serializer.fromJson<int>(json['id']),
+      expenseId: serializer.fromJson<int>(json['expenseId']),
+      name: serializer.fromJson<String>(json['name']),
+      amount: serializer.fromJson<double>(json['amount']),
+      categoryId: serializer.fromJson<int?>(json['categoryId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'expenseId': serializer.toJson<int>(expenseId),
+      'name': serializer.toJson<String>(name),
+      'amount': serializer.toJson<double>(amount),
+      'categoryId': serializer.toJson<int?>(categoryId),
+    };
+  }
+
+  ExpenseItem copyWith(
+          {int? id,
+          int? expenseId,
+          String? name,
+          double? amount,
+          Value<int?> categoryId = const Value.absent()}) =>
+      ExpenseItem(
+        id: id ?? this.id,
+        expenseId: expenseId ?? this.expenseId,
+        name: name ?? this.name,
+        amount: amount ?? this.amount,
+        categoryId: categoryId.present ? categoryId.value : this.categoryId,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('ExpenseItem(')
+          ..write('id: $id, ')
+          ..write('expenseId: $expenseId, ')
+          ..write('name: $name, ')
+          ..write('amount: $amount, ')
+          ..write('categoryId: $categoryId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, expenseId, name, amount, categoryId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExpenseItem &&
+          other.id == this.id &&
+          other.expenseId == this.expenseId &&
+          other.name == this.name &&
+          other.amount == this.amount &&
+          other.categoryId == this.categoryId);
+}
+
+class ExpenseItemsCompanion extends UpdateCompanion<ExpenseItem> {
+  final Value<int> id;
+  final Value<int> expenseId;
+  final Value<String> name;
+  final Value<double> amount;
+  final Value<int?> categoryId;
+  const ExpenseItemsCompanion({
+    this.id = const Value.absent(),
+    this.expenseId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.categoryId = const Value.absent(),
+  });
+  ExpenseItemsCompanion.insert({
+    this.id = const Value.absent(),
+    required int expenseId,
+    required String name,
+    required double amount,
+    this.categoryId = const Value.absent(),
+  })  : expenseId = Value(expenseId),
+        name = Value(name),
+        amount = Value(amount);
+  static Insertable<ExpenseItem> custom({
+    Expression<int>? id,
+    Expression<int>? expenseId,
+    Expression<String>? name,
+    Expression<double>? amount,
+    Expression<int>? categoryId,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (expenseId != null) 'expense_id': expenseId,
+      if (name != null) 'name': name,
+      if (amount != null) 'amount': amount,
+      if (categoryId != null) 'category_id': categoryId,
+    });
+  }
+
+  ExpenseItemsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? expenseId,
+      Value<String>? name,
+      Value<double>? amount,
+      Value<int?>? categoryId}) {
+    return ExpenseItemsCompanion(
+      id: id ?? this.id,
+      expenseId: expenseId ?? this.expenseId,
+      name: name ?? this.name,
+      amount: amount ?? this.amount,
+      categoryId: categoryId ?? this.categoryId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (expenseId.present) {
+      map['expense_id'] = Variable<int>(expenseId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<int>(categoryId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExpenseItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('expenseId: $expenseId, ')
+          ..write('name: $name, ')
+          ..write('amount: $amount, ')
+          ..write('categoryId: $categoryId')
           ..write(')'))
         .toString();
   }
@@ -1140,14 +1113,18 @@ class $ProductMappingsTable extends ProductMappings
   late final GeneratedColumn<String> knownName = GeneratedColumn<String>(
       'known_name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _defaultCategoryMeta =
-      const VerificationMeta('defaultCategory');
+  static const VerificationMeta _defaultCategoryIdMeta =
+      const VerificationMeta('defaultCategoryId');
   @override
-  late final GeneratedColumn<String> defaultCategory = GeneratedColumn<String>(
-      'default_category', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+  late final GeneratedColumn<int> defaultCategoryId = GeneratedColumn<int>(
+      'default_category_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES categories (id) ON DELETE SET NULL'));
   @override
-  List<GeneratedColumn> get $columns => [id, rawId, knownName, defaultCategory];
+  List<GeneratedColumn> get $columns =>
+      [id, rawId, knownName, defaultCategoryId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1173,13 +1150,11 @@ class $ProductMappingsTable extends ProductMappings
     } else if (isInserting) {
       context.missing(_knownNameMeta);
     }
-    if (data.containsKey('default_category')) {
+    if (data.containsKey('default_category_id')) {
       context.handle(
-          _defaultCategoryMeta,
-          defaultCategory.isAcceptableOrUnknown(
-              data['default_category']!, _defaultCategoryMeta));
-    } else if (isInserting) {
-      context.missing(_defaultCategoryMeta);
+          _defaultCategoryIdMeta,
+          defaultCategoryId.isAcceptableOrUnknown(
+              data['default_category_id']!, _defaultCategoryIdMeta));
     }
     return context;
   }
@@ -1196,8 +1171,8 @@ class $ProductMappingsTable extends ProductMappings
           .read(DriftSqlType.string, data['${effectivePrefix}raw_id'])!,
       knownName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}known_name'])!,
-      defaultCategory: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}default_category'])!,
+      defaultCategoryId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}default_category_id']),
     );
   }
 
@@ -1211,19 +1186,21 @@ class ProductMapping extends DataClass implements Insertable<ProductMapping> {
   final int id;
   final String rawId;
   final String knownName;
-  final String defaultCategory;
+  final int? defaultCategoryId;
   const ProductMapping(
       {required this.id,
       required this.rawId,
       required this.knownName,
-      required this.defaultCategory});
+      this.defaultCategoryId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['raw_id'] = Variable<String>(rawId);
     map['known_name'] = Variable<String>(knownName);
-    map['default_category'] = Variable<String>(defaultCategory);
+    if (!nullToAbsent || defaultCategoryId != null) {
+      map['default_category_id'] = Variable<int>(defaultCategoryId);
+    }
     return map;
   }
 
@@ -1232,7 +1209,9 @@ class ProductMapping extends DataClass implements Insertable<ProductMapping> {
       id: Value(id),
       rawId: Value(rawId),
       knownName: Value(knownName),
-      defaultCategory: Value(defaultCategory),
+      defaultCategoryId: defaultCategoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(defaultCategoryId),
     );
   }
 
@@ -1243,7 +1222,7 @@ class ProductMapping extends DataClass implements Insertable<ProductMapping> {
       id: serializer.fromJson<int>(json['id']),
       rawId: serializer.fromJson<String>(json['rawId']),
       knownName: serializer.fromJson<String>(json['knownName']),
-      defaultCategory: serializer.fromJson<String>(json['defaultCategory']),
+      defaultCategoryId: serializer.fromJson<int?>(json['defaultCategoryId']),
     );
   }
   @override
@@ -1253,7 +1232,7 @@ class ProductMapping extends DataClass implements Insertable<ProductMapping> {
       'id': serializer.toJson<int>(id),
       'rawId': serializer.toJson<String>(rawId),
       'knownName': serializer.toJson<String>(knownName),
-      'defaultCategory': serializer.toJson<String>(defaultCategory),
+      'defaultCategoryId': serializer.toJson<int?>(defaultCategoryId),
     };
   }
 
@@ -1261,12 +1240,14 @@ class ProductMapping extends DataClass implements Insertable<ProductMapping> {
           {int? id,
           String? rawId,
           String? knownName,
-          String? defaultCategory}) =>
+          Value<int?> defaultCategoryId = const Value.absent()}) =>
       ProductMapping(
         id: id ?? this.id,
         rawId: rawId ?? this.rawId,
         knownName: knownName ?? this.knownName,
-        defaultCategory: defaultCategory ?? this.defaultCategory,
+        defaultCategoryId: defaultCategoryId.present
+            ? defaultCategoryId.value
+            : this.defaultCategoryId,
       );
   @override
   String toString() {
@@ -1274,13 +1255,13 @@ class ProductMapping extends DataClass implements Insertable<ProductMapping> {
           ..write('id: $id, ')
           ..write('rawId: $rawId, ')
           ..write('knownName: $knownName, ')
-          ..write('defaultCategory: $defaultCategory')
+          ..write('defaultCategoryId: $defaultCategoryId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, rawId, knownName, defaultCategory);
+  int get hashCode => Object.hash(id, rawId, knownName, defaultCategoryId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1288,39 +1269,38 @@ class ProductMapping extends DataClass implements Insertable<ProductMapping> {
           other.id == this.id &&
           other.rawId == this.rawId &&
           other.knownName == this.knownName &&
-          other.defaultCategory == this.defaultCategory);
+          other.defaultCategoryId == this.defaultCategoryId);
 }
 
 class ProductMappingsCompanion extends UpdateCompanion<ProductMapping> {
   final Value<int> id;
   final Value<String> rawId;
   final Value<String> knownName;
-  final Value<String> defaultCategory;
+  final Value<int?> defaultCategoryId;
   const ProductMappingsCompanion({
     this.id = const Value.absent(),
     this.rawId = const Value.absent(),
     this.knownName = const Value.absent(),
-    this.defaultCategory = const Value.absent(),
+    this.defaultCategoryId = const Value.absent(),
   });
   ProductMappingsCompanion.insert({
     this.id = const Value.absent(),
     required String rawId,
     required String knownName,
-    required String defaultCategory,
+    this.defaultCategoryId = const Value.absent(),
   })  : rawId = Value(rawId),
-        knownName = Value(knownName),
-        defaultCategory = Value(defaultCategory);
+        knownName = Value(knownName);
   static Insertable<ProductMapping> custom({
     Expression<int>? id,
     Expression<String>? rawId,
     Expression<String>? knownName,
-    Expression<String>? defaultCategory,
+    Expression<int>? defaultCategoryId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (rawId != null) 'raw_id': rawId,
       if (knownName != null) 'known_name': knownName,
-      if (defaultCategory != null) 'default_category': defaultCategory,
+      if (defaultCategoryId != null) 'default_category_id': defaultCategoryId,
     });
   }
 
@@ -1328,12 +1308,12 @@ class ProductMappingsCompanion extends UpdateCompanion<ProductMapping> {
       {Value<int>? id,
       Value<String>? rawId,
       Value<String>? knownName,
-      Value<String>? defaultCategory}) {
+      Value<int?>? defaultCategoryId}) {
     return ProductMappingsCompanion(
       id: id ?? this.id,
       rawId: rawId ?? this.rawId,
       knownName: knownName ?? this.knownName,
-      defaultCategory: defaultCategory ?? this.defaultCategory,
+      defaultCategoryId: defaultCategoryId ?? this.defaultCategoryId,
     );
   }
 
@@ -1349,8 +1329,8 @@ class ProductMappingsCompanion extends UpdateCompanion<ProductMapping> {
     if (knownName.present) {
       map['known_name'] = Variable<String>(knownName.value);
     }
-    if (defaultCategory.present) {
-      map['default_category'] = Variable<String>(defaultCategory.value);
+    if (defaultCategoryId.present) {
+      map['default_category_id'] = Variable<int>(defaultCategoryId.value);
     }
     return map;
   }
@@ -1361,7 +1341,7 @@ class ProductMappingsCompanion extends UpdateCompanion<ProductMapping> {
           ..write('id: $id, ')
           ..write('rawId: $rawId, ')
           ..write('knownName: $knownName, ')
-          ..write('defaultCategory: $defaultCategory')
+          ..write('defaultCategoryId: $defaultCategoryId')
           ..write(')'))
         .toString();
   }
@@ -1392,12 +1372,15 @@ class $RecurringExpensesTable extends RecurringExpenses
   late final GeneratedColumn<double> amount = GeneratedColumn<double>(
       'amount', aliasedName, false,
       type: DriftSqlType.double, requiredDuringInsert: true);
-  static const VerificationMeta _categoryMeta =
-      const VerificationMeta('category');
+  static const VerificationMeta _categoryIdMeta =
+      const VerificationMeta('categoryId');
   @override
-  late final GeneratedColumn<String> category = GeneratedColumn<String>(
-      'category', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+  late final GeneratedColumn<int> categoryId = GeneratedColumn<int>(
+      'category_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES categories (id) ON DELETE SET NULL'));
   static const VerificationMeta _frequencyMeta =
       const VerificationMeta('frequency');
   @override
@@ -1412,7 +1395,7 @@ class $RecurringExpensesTable extends RecurringExpenses
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, title, amount, category, frequency, nextDueDate];
+      [id, title, amount, categoryId, frequency, nextDueDate];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1438,11 +1421,11 @@ class $RecurringExpensesTable extends RecurringExpenses
     } else if (isInserting) {
       context.missing(_amountMeta);
     }
-    if (data.containsKey('category')) {
-      context.handle(_categoryMeta,
-          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
-    } else if (isInserting) {
-      context.missing(_categoryMeta);
+    if (data.containsKey('category_id')) {
+      context.handle(
+          _categoryIdMeta,
+          categoryId.isAcceptableOrUnknown(
+              data['category_id']!, _categoryIdMeta));
     }
     if (data.containsKey('frequency')) {
       context.handle(_frequencyMeta,
@@ -1473,8 +1456,8 @@ class $RecurringExpensesTable extends RecurringExpenses
           .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
       amount: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}amount'])!,
-      category: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
+      categoryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}category_id']),
       frequency: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}frequency'])!,
       nextDueDate: attachedDatabase.typeMapping.read(
@@ -1493,14 +1476,14 @@ class RecurringExpense extends DataClass
   final int id;
   final String title;
   final double amount;
-  final String category;
+  final int? categoryId;
   final String frequency;
   final DateTime nextDueDate;
   const RecurringExpense(
       {required this.id,
       required this.title,
       required this.amount,
-      required this.category,
+      this.categoryId,
       required this.frequency,
       required this.nextDueDate});
   @override
@@ -1509,7 +1492,9 @@ class RecurringExpense extends DataClass
     map['id'] = Variable<int>(id);
     map['title'] = Variable<String>(title);
     map['amount'] = Variable<double>(amount);
-    map['category'] = Variable<String>(category);
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<int>(categoryId);
+    }
     map['frequency'] = Variable<String>(frequency);
     map['next_due_date'] = Variable<DateTime>(nextDueDate);
     return map;
@@ -1520,7 +1505,9 @@ class RecurringExpense extends DataClass
       id: Value(id),
       title: Value(title),
       amount: Value(amount),
-      category: Value(category),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
       frequency: Value(frequency),
       nextDueDate: Value(nextDueDate),
     );
@@ -1533,7 +1520,7 @@ class RecurringExpense extends DataClass
       id: serializer.fromJson<int>(json['id']),
       title: serializer.fromJson<String>(json['title']),
       amount: serializer.fromJson<double>(json['amount']),
-      category: serializer.fromJson<String>(json['category']),
+      categoryId: serializer.fromJson<int?>(json['categoryId']),
       frequency: serializer.fromJson<String>(json['frequency']),
       nextDueDate: serializer.fromJson<DateTime>(json['nextDueDate']),
     );
@@ -1545,7 +1532,7 @@ class RecurringExpense extends DataClass
       'id': serializer.toJson<int>(id),
       'title': serializer.toJson<String>(title),
       'amount': serializer.toJson<double>(amount),
-      'category': serializer.toJson<String>(category),
+      'categoryId': serializer.toJson<int?>(categoryId),
       'frequency': serializer.toJson<String>(frequency),
       'nextDueDate': serializer.toJson<DateTime>(nextDueDate),
     };
@@ -1555,14 +1542,14 @@ class RecurringExpense extends DataClass
           {int? id,
           String? title,
           double? amount,
-          String? category,
+          Value<int?> categoryId = const Value.absent(),
           String? frequency,
           DateTime? nextDueDate}) =>
       RecurringExpense(
         id: id ?? this.id,
         title: title ?? this.title,
         amount: amount ?? this.amount,
-        category: category ?? this.category,
+        categoryId: categoryId.present ? categoryId.value : this.categoryId,
         frequency: frequency ?? this.frequency,
         nextDueDate: nextDueDate ?? this.nextDueDate,
       );
@@ -1572,7 +1559,7 @@ class RecurringExpense extends DataClass
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('amount: $amount, ')
-          ..write('category: $category, ')
+          ..write('categoryId: $categoryId, ')
           ..write('frequency: $frequency, ')
           ..write('nextDueDate: $nextDueDate')
           ..write(')'))
@@ -1581,7 +1568,7 @@ class RecurringExpense extends DataClass
 
   @override
   int get hashCode =>
-      Object.hash(id, title, amount, category, frequency, nextDueDate);
+      Object.hash(id, title, amount, categoryId, frequency, nextDueDate);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1589,7 +1576,7 @@ class RecurringExpense extends DataClass
           other.id == this.id &&
           other.title == this.title &&
           other.amount == this.amount &&
-          other.category == this.category &&
+          other.categoryId == this.categoryId &&
           other.frequency == this.frequency &&
           other.nextDueDate == this.nextDueDate);
 }
@@ -1598,14 +1585,14 @@ class RecurringExpensesCompanion extends UpdateCompanion<RecurringExpense> {
   final Value<int> id;
   final Value<String> title;
   final Value<double> amount;
-  final Value<String> category;
+  final Value<int?> categoryId;
   final Value<String> frequency;
   final Value<DateTime> nextDueDate;
   const RecurringExpensesCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
     this.amount = const Value.absent(),
-    this.category = const Value.absent(),
+    this.categoryId = const Value.absent(),
     this.frequency = const Value.absent(),
     this.nextDueDate = const Value.absent(),
   });
@@ -1613,19 +1600,18 @@ class RecurringExpensesCompanion extends UpdateCompanion<RecurringExpense> {
     this.id = const Value.absent(),
     required String title,
     required double amount,
-    required String category,
+    this.categoryId = const Value.absent(),
     required String frequency,
     required DateTime nextDueDate,
   })  : title = Value(title),
         amount = Value(amount),
-        category = Value(category),
         frequency = Value(frequency),
         nextDueDate = Value(nextDueDate);
   static Insertable<RecurringExpense> custom({
     Expression<int>? id,
     Expression<String>? title,
     Expression<double>? amount,
-    Expression<String>? category,
+    Expression<int>? categoryId,
     Expression<String>? frequency,
     Expression<DateTime>? nextDueDate,
   }) {
@@ -1633,7 +1619,7 @@ class RecurringExpensesCompanion extends UpdateCompanion<RecurringExpense> {
       if (id != null) 'id': id,
       if (title != null) 'title': title,
       if (amount != null) 'amount': amount,
-      if (category != null) 'category': category,
+      if (categoryId != null) 'category_id': categoryId,
       if (frequency != null) 'frequency': frequency,
       if (nextDueDate != null) 'next_due_date': nextDueDate,
     });
@@ -1643,14 +1629,14 @@ class RecurringExpensesCompanion extends UpdateCompanion<RecurringExpense> {
       {Value<int>? id,
       Value<String>? title,
       Value<double>? amount,
-      Value<String>? category,
+      Value<int?>? categoryId,
       Value<String>? frequency,
       Value<DateTime>? nextDueDate}) {
     return RecurringExpensesCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
       amount: amount ?? this.amount,
-      category: category ?? this.category,
+      categoryId: categoryId ?? this.categoryId,
       frequency: frequency ?? this.frequency,
       nextDueDate: nextDueDate ?? this.nextDueDate,
     );
@@ -1668,8 +1654,8 @@ class RecurringExpensesCompanion extends UpdateCompanion<RecurringExpense> {
     if (amount.present) {
       map['amount'] = Variable<double>(amount.value);
     }
-    if (category.present) {
-      map['category'] = Variable<String>(category.value);
+    if (categoryId.present) {
+      map['category_id'] = Variable<int>(categoryId.value);
     }
     if (frequency.present) {
       map['frequency'] = Variable<String>(frequency.value);
@@ -1686,7 +1672,7 @@ class RecurringExpensesCompanion extends UpdateCompanion<RecurringExpense> {
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('amount: $amount, ')
-          ..write('category: $category, ')
+          ..write('categoryId: $categoryId, ')
           ..write('frequency: $frequency, ')
           ..write('nextDueDate: $nextDueDate')
           ..write(')'))
@@ -2033,12 +2019,15 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
       requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _categoryMeta =
-      const VerificationMeta('category');
+  static const VerificationMeta _categoryIdMeta =
+      const VerificationMeta('categoryId');
   @override
-  late final GeneratedColumn<String> category = GeneratedColumn<String>(
-      'category', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+  late final GeneratedColumn<int> categoryId = GeneratedColumn<int>(
+      'category_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES categories (id) ON DELETE SET NULL'));
   static const VerificationMeta _amountLimitMeta =
       const VerificationMeta('amountLimit');
   @override
@@ -2060,7 +2049,7 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
       defaultValue: currentDateAndTime);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, category, amountLimit, period, createdAt];
+      [id, categoryId, amountLimit, period, createdAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2074,11 +2063,11 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('category')) {
-      context.handle(_categoryMeta,
-          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
-    } else if (isInserting) {
-      context.missing(_categoryMeta);
+    if (data.containsKey('category_id')) {
+      context.handle(
+          _categoryIdMeta,
+          categoryId.isAcceptableOrUnknown(
+              data['category_id']!, _categoryIdMeta));
     }
     if (data.containsKey('amount_limit')) {
       context.handle(
@@ -2109,8 +2098,8 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     return Budget(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      category: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
+      categoryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}category_id']),
       amountLimit: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}amount_limit'])!,
       period: attachedDatabase.typeMapping
@@ -2128,13 +2117,13 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
 
 class Budget extends DataClass implements Insertable<Budget> {
   final int id;
-  final String category;
+  final int? categoryId;
   final double amountLimit;
   final String period;
   final DateTime createdAt;
   const Budget(
       {required this.id,
-      required this.category,
+      this.categoryId,
       required this.amountLimit,
       required this.period,
       required this.createdAt});
@@ -2142,7 +2131,9 @@ class Budget extends DataClass implements Insertable<Budget> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['category'] = Variable<String>(category);
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<int>(categoryId);
+    }
     map['amount_limit'] = Variable<double>(amountLimit);
     map['period'] = Variable<String>(period);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -2152,7 +2143,9 @@ class Budget extends DataClass implements Insertable<Budget> {
   BudgetsCompanion toCompanion(bool nullToAbsent) {
     return BudgetsCompanion(
       id: Value(id),
-      category: Value(category),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
       amountLimit: Value(amountLimit),
       period: Value(period),
       createdAt: Value(createdAt),
@@ -2164,7 +2157,7 @@ class Budget extends DataClass implements Insertable<Budget> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Budget(
       id: serializer.fromJson<int>(json['id']),
-      category: serializer.fromJson<String>(json['category']),
+      categoryId: serializer.fromJson<int?>(json['categoryId']),
       amountLimit: serializer.fromJson<double>(json['amountLimit']),
       period: serializer.fromJson<String>(json['period']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -2175,7 +2168,7 @@ class Budget extends DataClass implements Insertable<Budget> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'category': serializer.toJson<String>(category),
+      'categoryId': serializer.toJson<int?>(categoryId),
       'amountLimit': serializer.toJson<double>(amountLimit),
       'period': serializer.toJson<String>(period),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -2184,13 +2177,13 @@ class Budget extends DataClass implements Insertable<Budget> {
 
   Budget copyWith(
           {int? id,
-          String? category,
+          Value<int?> categoryId = const Value.absent(),
           double? amountLimit,
           String? period,
           DateTime? createdAt}) =>
       Budget(
         id: id ?? this.id,
-        category: category ?? this.category,
+        categoryId: categoryId.present ? categoryId.value : this.categoryId,
         amountLimit: amountLimit ?? this.amountLimit,
         period: period ?? this.period,
         createdAt: createdAt ?? this.createdAt,
@@ -2199,7 +2192,7 @@ class Budget extends DataClass implements Insertable<Budget> {
   String toString() {
     return (StringBuffer('Budget(')
           ..write('id: $id, ')
-          ..write('category: $category, ')
+          ..write('categoryId: $categoryId, ')
           ..write('amountLimit: $amountLimit, ')
           ..write('period: $period, ')
           ..write('createdAt: $createdAt')
@@ -2208,13 +2201,14 @@ class Budget extends DataClass implements Insertable<Budget> {
   }
 
   @override
-  int get hashCode => Object.hash(id, category, amountLimit, period, createdAt);
+  int get hashCode =>
+      Object.hash(id, categoryId, amountLimit, period, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Budget &&
           other.id == this.id &&
-          other.category == this.category &&
+          other.categoryId == this.categoryId &&
           other.amountLimit == this.amountLimit &&
           other.period == this.period &&
           other.createdAt == this.createdAt);
@@ -2222,36 +2216,35 @@ class Budget extends DataClass implements Insertable<Budget> {
 
 class BudgetsCompanion extends UpdateCompanion<Budget> {
   final Value<int> id;
-  final Value<String> category;
+  final Value<int?> categoryId;
   final Value<double> amountLimit;
   final Value<String> period;
   final Value<DateTime> createdAt;
   const BudgetsCompanion({
     this.id = const Value.absent(),
-    this.category = const Value.absent(),
+    this.categoryId = const Value.absent(),
     this.amountLimit = const Value.absent(),
     this.period = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   BudgetsCompanion.insert({
     this.id = const Value.absent(),
-    required String category,
+    this.categoryId = const Value.absent(),
     required double amountLimit,
     required String period,
     this.createdAt = const Value.absent(),
-  })  : category = Value(category),
-        amountLimit = Value(amountLimit),
+  })  : amountLimit = Value(amountLimit),
         period = Value(period);
   static Insertable<Budget> custom({
     Expression<int>? id,
-    Expression<String>? category,
+    Expression<int>? categoryId,
     Expression<double>? amountLimit,
     Expression<String>? period,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (category != null) 'category': category,
+      if (categoryId != null) 'category_id': categoryId,
       if (amountLimit != null) 'amount_limit': amountLimit,
       if (period != null) 'period': period,
       if (createdAt != null) 'created_at': createdAt,
@@ -2260,13 +2253,13 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
 
   BudgetsCompanion copyWith(
       {Value<int>? id,
-      Value<String>? category,
+      Value<int?>? categoryId,
       Value<double>? amountLimit,
       Value<String>? period,
       Value<DateTime>? createdAt}) {
     return BudgetsCompanion(
       id: id ?? this.id,
-      category: category ?? this.category,
+      categoryId: categoryId ?? this.categoryId,
       amountLimit: amountLimit ?? this.amountLimit,
       period: period ?? this.period,
       createdAt: createdAt ?? this.createdAt,
@@ -2279,8 +2272,8 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
-    if (category.present) {
-      map['category'] = Variable<String>(category.value);
+    if (categoryId.present) {
+      map['category_id'] = Variable<int>(categoryId.value);
     }
     if (amountLimit.present) {
       map['amount_limit'] = Variable<double>(amountLimit.value);
@@ -2298,7 +2291,7 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
   String toString() {
     return (StringBuffer('BudgetsCompanion(')
           ..write('id: $id, ')
-          ..write('category: $category, ')
+          ..write('categoryId: $categoryId, ')
           ..write('amountLimit: $amountLimit, ')
           ..write('period: $period, ')
           ..write('createdAt: $createdAt')
@@ -2307,11 +2300,340 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
   }
 }
 
+class $SavingsGoalsTable extends SavingsGoals
+    with TableInfo<$SavingsGoalsTable, SavingsGoal> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SavingsGoalsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, false,
+      additionalChecks:
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 100),
+      type: DriftSqlType.string,
+      requiredDuringInsert: true);
+  static const VerificationMeta _targetAmountMeta =
+      const VerificationMeta('targetAmount');
+  @override
+  late final GeneratedColumn<double> targetAmount = GeneratedColumn<double>(
+      'target_amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _startDateMeta =
+      const VerificationMeta('startDate');
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+      'start_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _endDateMeta =
+      const VerificationMeta('endDate');
+  @override
+  late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
+      'end_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, title, targetAmount, startDate, endDate, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'savings_goals';
+  @override
+  VerificationContext validateIntegrity(Insertable<SavingsGoal> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('target_amount')) {
+      context.handle(
+          _targetAmountMeta,
+          targetAmount.isAcceptableOrUnknown(
+              data['target_amount']!, _targetAmountMeta));
+    } else if (isInserting) {
+      context.missing(_targetAmountMeta);
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(_startDateMeta,
+          startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta));
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(_endDateMeta,
+          endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta));
+    } else if (isInserting) {
+      context.missing(_endDateMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SavingsGoal map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SavingsGoal(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
+      targetAmount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}target_amount'])!,
+      startDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}start_date'])!,
+      endDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}end_date'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $SavingsGoalsTable createAlias(String alias) {
+    return $SavingsGoalsTable(attachedDatabase, alias);
+  }
+}
+
+class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
+  final int id;
+  final String title;
+  final double targetAmount;
+  final DateTime startDate;
+  final DateTime endDate;
+  final DateTime createdAt;
+  const SavingsGoal(
+      {required this.id,
+      required this.title,
+      required this.targetAmount,
+      required this.startDate,
+      required this.endDate,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['title'] = Variable<String>(title);
+    map['target_amount'] = Variable<double>(targetAmount);
+    map['start_date'] = Variable<DateTime>(startDate);
+    map['end_date'] = Variable<DateTime>(endDate);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  SavingsGoalsCompanion toCompanion(bool nullToAbsent) {
+    return SavingsGoalsCompanion(
+      id: Value(id),
+      title: Value(title),
+      targetAmount: Value(targetAmount),
+      startDate: Value(startDate),
+      endDate: Value(endDate),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SavingsGoal.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SavingsGoal(
+      id: serializer.fromJson<int>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      targetAmount: serializer.fromJson<double>(json['targetAmount']),
+      startDate: serializer.fromJson<DateTime>(json['startDate']),
+      endDate: serializer.fromJson<DateTime>(json['endDate']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'title': serializer.toJson<String>(title),
+      'targetAmount': serializer.toJson<double>(targetAmount),
+      'startDate': serializer.toJson<DateTime>(startDate),
+      'endDate': serializer.toJson<DateTime>(endDate),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  SavingsGoal copyWith(
+          {int? id,
+          String? title,
+          double? targetAmount,
+          DateTime? startDate,
+          DateTime? endDate,
+          DateTime? createdAt}) =>
+      SavingsGoal(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        targetAmount: targetAmount ?? this.targetAmount,
+        startDate: startDate ?? this.startDate,
+        endDate: endDate ?? this.endDate,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('SavingsGoal(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('targetAmount: $targetAmount, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, title, targetAmount, startDate, endDate, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SavingsGoal &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.targetAmount == this.targetAmount &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
+          other.createdAt == this.createdAt);
+}
+
+class SavingsGoalsCompanion extends UpdateCompanion<SavingsGoal> {
+  final Value<int> id;
+  final Value<String> title;
+  final Value<double> targetAmount;
+  final Value<DateTime> startDate;
+  final Value<DateTime> endDate;
+  final Value<DateTime> createdAt;
+  const SavingsGoalsCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.targetAmount = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  SavingsGoalsCompanion.insert({
+    this.id = const Value.absent(),
+    required String title,
+    required double targetAmount,
+    required DateTime startDate,
+    required DateTime endDate,
+    this.createdAt = const Value.absent(),
+  })  : title = Value(title),
+        targetAmount = Value(targetAmount),
+        startDate = Value(startDate),
+        endDate = Value(endDate);
+  static Insertable<SavingsGoal> custom({
+    Expression<int>? id,
+    Expression<String>? title,
+    Expression<double>? targetAmount,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? endDate,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (targetAmount != null) 'target_amount': targetAmount,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  SavingsGoalsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? title,
+      Value<double>? targetAmount,
+      Value<DateTime>? startDate,
+      Value<DateTime>? endDate,
+      Value<DateTime>? createdAt}) {
+    return SavingsGoalsCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      targetAmount: targetAmount ?? this.targetAmount,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (targetAmount.present) {
+      map['target_amount'] = Variable<double>(targetAmount.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<DateTime>(endDate.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SavingsGoalsCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('targetAmount: $targetAmount, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDb extends GeneratedDatabase {
   _$AppDb(QueryExecutor e) : super(e);
+  late final $CategoriesTable categories = $CategoriesTable(this);
   late final $ExpensesTable expenses = $ExpensesTable(this);
   late final $ExpenseItemsTable expenseItems = $ExpenseItemsTable(this);
-  late final $CategoriesTable categories = $CategoriesTable(this);
   late final $IncomesTable incomes = $IncomesTable(this);
   late final $ProductMappingsTable productMappings =
       $ProductMappingsTable(this);
@@ -2320,6 +2642,7 @@ abstract class _$AppDb extends GeneratedDatabase {
   late final $RecurringIncomesTable recurringIncomes =
       $RecurringIncomesTable(this);
   late final $BudgetsTable budgets = $BudgetsTable(this);
+  late final $SavingsGoalsTable savingsGoals = $SavingsGoalsTable(this);
   late final ExpensesDao expensesDao = ExpensesDao(this as AppDb);
   late final IncomesDao incomesDao = IncomesDao(this as AppDb);
   late final CategoriesDao categoriesDao = CategoriesDao(this as AppDb);
@@ -2330,14 +2653,15 @@ abstract class _$AppDb extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
+        categories,
         expenses,
         expenseItems,
-        categories,
         incomes,
         productMappings,
         recurringExpenses,
         recurringIncomes,
-        budgets
+        budgets,
+        savingsGoals
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -2349,11 +2673,33 @@ abstract class _$AppDb extends GeneratedDatabase {
               TableUpdate('expense_items', kind: UpdateKind.delete),
             ],
           ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('categories',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('product_mappings', kind: UpdateKind.update),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('categories',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('recurring_expenses', kind: UpdateKind.update),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('categories',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('budgets', kind: UpdateKind.update),
+            ],
+          ),
         ],
       );
 }
 
 mixin _$ExpensesDaoMixin on DatabaseAccessor<AppDb> {
+  $CategoriesTable get categories => attachedDatabase.categories;
   $ExpensesTable get expenses => attachedDatabase.expenses;
   $ExpenseItemsTable get expenseItems => attachedDatabase.expenseItems;
 }
@@ -2364,6 +2710,7 @@ mixin _$CategoriesDaoMixin on DatabaseAccessor<AppDb> {
   $CategoriesTable get categories => attachedDatabase.categories;
 }
 mixin _$RecurringDaoMixin on DatabaseAccessor<AppDb> {
+  $CategoriesTable get categories => attachedDatabase.categories;
   $RecurringExpensesTable get recurringExpenses =>
       attachedDatabase.recurringExpenses;
   $RecurringIncomesTable get recurringIncomes =>
@@ -2371,6 +2718,7 @@ mixin _$RecurringDaoMixin on DatabaseAccessor<AppDb> {
   $ProductMappingsTable get productMappings => attachedDatabase.productMappings;
 }
 mixin _$BudgetsDaoMixin on DatabaseAccessor<AppDb> {
+  $CategoriesTable get categories => attachedDatabase.categories;
   $BudgetsTable get budgets => attachedDatabase.budgets;
   $ExpensesTable get expenses => attachedDatabase.expenses;
   $ExpenseItemsTable get expenseItems => attachedDatabase.expenseItems;

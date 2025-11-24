@@ -48,7 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Map<String, double> _computeTotalsForRange(ExpensesState expenseState, TimeRange range) {
+  Map<String, double> _computeTotalsForRange(ExpensesState expenseState, TimeRange range, [CategoryProvider? categoryProvider]) {
     final start = _rangeStart(range);
     final map = <String, double>{};
 
@@ -59,11 +59,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
       if (entry.items.isNotEmpty) {
         for (final item in entry.items) {
-          final cat = item.categoryName;
+          final cat = item.categoryId != null ? (categoryProvider?.getNameForId(item.categoryId) ?? 'Inne') : 'Inne';
           map[cat] = (map[cat] ?? 0) + item.amount;
         }
       } else {
-        final cat = exp.categoryName;
+        final cat = exp.categoryId != null ? (categoryProvider?.getNameForId(exp.categoryId) ?? 'Inne') : 'Inne';
         map[cat] = (map[cat] ?? 0) + exp.amount;
       }
     }
@@ -138,7 +138,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // <--- ZMIANA: Pobieramy CategoryProvider, aby mieć dostęp do kolorów
     final categoryProvider = context.watch<CategoryProvider>(); 
 
-    final totals = _computeTotalsForRange(expenseState, _selectedRange);
+    final totals = _computeTotalsForRange(expenseState, _selectedRange, categoryProvider);
     final totalExpenses = totals.values.fold(0.0, (sum, item) => sum + item);
     final totalIncomes = incomeState.totalIncome;
     final starting = context.watch<StartingBalanceProvider>().total;
@@ -313,7 +313,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               );
                             } else if (item is Expense) {
                               // <--- ZMIANA: Pobieramy kolor z Providera dla wydatku
-                              final color = categoryProvider.getColorFor(item.categoryName, 'expense');
+                              final color = (item.categoryId != null) ? categoryProvider.getColorForId(item.categoryId) : categoryProvider.getColorFor('Inne', 'expense');
                               
                               return Dismissible(
                                 key: ValueKey('exp_${item.id}'),
@@ -324,10 +324,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddExpenseScreen(expenseToEdit: item))),
                                   leading: CircleAvatar(
                                     backgroundColor: color,
-                                    child: Text(item.categoryName.isNotEmpty ? item.categoryName[0] : '?'),
+                                    child: Text(((item.categoryId != null) ? categoryProvider.getNameForId(item.categoryId) : 'Inne').isNotEmpty ? ((item.categoryId != null) ? categoryProvider.getNameForId(item.categoryId) : 'Inne')[0] : '?'),
                                   ),
                                   title: Text(item.title),
-                                  subtitle: Text('${DateFormat('dd.MM.yyyy').format(item.date)} • ${item.categoryName}'),
+                                  subtitle: Text('${DateFormat('dd.MM.yyyy').format(item.date)} • ${ (item.categoryId != null) ? categoryProvider.getNameForId(item.categoryId) : 'Inne' }'),
                                   trailing: Text(
                                     '-${item.amount.toStringAsFixed(2)} zł',
                                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),

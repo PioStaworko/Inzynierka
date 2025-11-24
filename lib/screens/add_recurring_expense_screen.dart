@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../data/app_database.dart';
 import '../providers/recurring_expense_provider.dart';
+import '../providers/category_provider.dart';
 import '../widgets/category_selector.dart';
 
 class AddRecurringExpenseScreen extends StatefulWidget {
@@ -33,7 +34,13 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
       _titleController = TextEditingController(text: e.title);
       _amountController = TextEditingController(text: e.amount.toString());
       _selectedDate = e.nextDueDate;
-      _selectedCategory = e.category;
+      // Resolve category id -> name using CategoryProvider
+      try {
+        final catProv = Provider.of<CategoryProvider>(context, listen: false);
+        _selectedCategory = catProv.getNameForId(e.categoryId);
+      } catch (_) {
+        _selectedCategory = 'Inne';
+      }
       _selectedFrequency = e.frequency;
     } else {
       _titleController = TextEditingController();
@@ -65,14 +72,14 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
     final provider = context.read<RecurringExpenseProvider>();
 
     if (widget.expenseToEdit != null) {
-      final updated = widget.expenseToEdit!.copyWith(
-        title: _titleController.text,
-        amount: enteredAmount,
-        category: _selectedCategory,
-        frequency: _selectedFrequency,
-        nextDueDate: _selectedDate!,
+      await provider.updateRecurringExpenseByFields(
+        widget.expenseToEdit!.id,
+        _titleController.text,
+        enteredAmount,
+        _selectedCategory,
+        _selectedFrequency,
+        _selectedDate!,
       );
-      await provider.updateRecurringExpense(updated);
     } else {
       await provider.addRecurringExpense(
         _titleController.text,

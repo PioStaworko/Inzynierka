@@ -7,6 +7,7 @@ import '../screens/recurring_income_list_screen.dart';
 import '../screens/settings_screen.dart';
 import '../providers/theme_provider.dart';
 import '../screens/budgets_screen.dart';
+import '../screens/savings_goals_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -72,12 +73,23 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.pie_chart), 
-            title: const Text('Budżety i Cele'),
+            title: const Text('Budżety'),
             onTap: () {
               Navigator.of(context).pop();
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (ctx) => const BudgetScreen()), 
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.savings),
+            title: const Text('Cele oszczędnościowe'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (ctx) => const SavingsGoalsScreen()),
               );
             },
           ),

@@ -17,8 +17,10 @@ samples, guidance on mobile development, and a full API reference.
 
 
 
-#TODO: Cele oszczczędnościowe
+#TODO: Cele oszczczędnościowe                                       DONE
 #TODO: Budżet na kategorię i powiadomienia przy przekroczeniu       DONE
 #TODO: Ustawienie początkowego majątku przy pierwszym włączeniu     DONE
-#TODO: Jakieś "Witaj XYZ - podanie imienia"
-#TODO: Export do xlsx (ewentualnie)
+#TODO: Export do xlsx 
+#TODO: Zakładka zarządzania kategoriami
+#TODO: Filtrowanie wydatków
+#TODO: Zmiana zakresu wykresu słupkowego (albo przesuwanie)

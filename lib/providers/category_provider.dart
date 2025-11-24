@@ -50,6 +50,27 @@ class CategoryProvider extends ChangeNotifier {
     }
   }
 
+  // Get category name by id (returns 'Inne' if not found)
+  String getNameForId(int? id) {
+    if (id == null) return 'Inne';
+    final all = [..._expenseCategories, ..._incomeCategories];
+    try {
+      return all.firstWhere((c) => c.id == id).name;
+    } catch (_) {
+      return 'Inne';
+    }
+  }
+
+  Color getColorForId(int? id) {
+    if (id == null) return Colors.grey;
+    final all = [..._expenseCategories, ..._incomeCategories];
+    try {
+      return Color(all.firstWhere((c) => c.id == id).colorValue);
+    } catch (_) {
+      return Colors.grey;
+    }
+  }
+
   Future<void> addCategory(String name, String type, Color color) async {
     await dao.insertCategory(CategoriesCompanion.insert(
       name: name,
