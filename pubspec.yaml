@@ -19,6 +19,7 @@ dependencies:
   shared_preferences: ^2.2.0
   image_picker: ^1.2.1
   image_cropper: ^11.0.0
+  image: ^4.0.15
   google_mlkit_text_recognition: ^0.15.0
   # Drift (SQLite) - lightweight local SQL with codegen
   drift: ^2.0.0

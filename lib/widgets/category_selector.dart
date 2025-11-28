@@ -8,12 +8,14 @@ class CategorySelector extends StatefulWidget {
   final String type; // <--- Zmieniamy z Enum na String ('expense' lub 'income')
   final String? initialValue;
   final Function(String) onChanged;
+  final bool isLoaded; // jeśli false, pokazujemy placeholder/loading
 
   const CategorySelector({
     super.key,
     required this.type,
     required this.onChanged,
     this.initialValue,
+    this.isLoaded = true,
   });
 
   @override
@@ -27,6 +29,17 @@ class _CategorySelectorState extends State<CategorySelector> {
   void initState() {
     super.initState();
     _currentValue = widget.initialValue;
+  }
+
+  @override
+  void didUpdateWidget(covariant CategorySelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Jeśli rodzic podał nową wartość początkową, aktualizujemy stan
+    if (widget.initialValue != oldWidget.initialValue && widget.initialValue != null) {
+      setState(() {
+        _currentValue = widget.initialValue;
+      });
+    }
   }
 
   // Funkcja otwierająca okienko dodawania
@@ -114,6 +127,14 @@ class _CategorySelectorState extends State<CategorySelector> {
     final categories = widget.type == 'expense'
         ? provider.expenseCategories
         : provider.incomeCategories;
+
+    // Jeśli komponent nie jest jeszcze załadowany (np. czekamy na DB), pokaż placeholder
+    if (!widget.isLoaded) {
+      return const SizedBox(
+        height: 60,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     // Zabezpieczenie: jeśli wybrana kategoria została usunięta, resetuj
     if (_currentValue != null && 
