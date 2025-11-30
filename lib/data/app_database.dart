@@ -494,6 +494,7 @@ class CategoriesDao extends DatabaseAccessor<AppDb> with _$CategoriesDaoMixin {
   Future<void> insertCategory(CategoriesCompanion entry) => into(categories).insert(entry);
   Future<void> deleteCategory(int id) => (delete(categories)..where((t) => t.id.equals(id))).go();
   Future<void> insertAll(List<CategoriesCompanion> list) async { await batch((batch) => batch.insertAll(categories, list)); }
+  Future<void> updateCategory(CategoriesCompanion entry) => update(categories).replace(entry);
 }
 
 @DriftAccessor(tables: [RecurringExpenses, RecurringIncomes, ProductMappings])

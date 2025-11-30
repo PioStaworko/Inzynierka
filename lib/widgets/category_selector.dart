@@ -153,7 +153,7 @@ class _CategorySelectorState extends State<CategorySelector> {
     }
 
     return DropdownButtonFormField<String>(
-      initialValue: _currentValue,
+      value: _currentValue,
       decoration: const InputDecoration(labelText: 'Kategoria'),
       items: [
         // 1. Lista istniejących kategorii

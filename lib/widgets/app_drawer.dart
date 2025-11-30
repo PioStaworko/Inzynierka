@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../screens/recurring_expenses_list_screen.dart'; // Stworzymy ten plik za chwilę
 import '../screens/recurring_income_list_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/manage_categories_screen.dart';
 import '../providers/theme_provider.dart';
 import '../screens/budgets_screen.dart';
 import '../screens/savings_goals_screen.dart';
@@ -102,6 +103,17 @@ class AppDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (ctx) => const SettingsScreen()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.category),
+            title: const Text('Kategorie'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (ctx) => const ManageCategoriesScreen()),
               );
             },
           ),

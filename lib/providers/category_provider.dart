@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:drift/drift.dart';
 import '../data/app_database.dart';
 
 class CategoryProvider extends ChangeNotifier {
@@ -75,13 +76,28 @@ class CategoryProvider extends ChangeNotifier {
     await dao.insertCategory(CategoriesCompanion.insert(
       name: name,
       type: type,
-      colorValue: color.toARGB32(),
+      colorValue: color.value,
     ));
     _loadCategories();
   }
   
   Future<void> deleteCategory(int id) async {
     await dao.deleteCategory(id);
+    _loadCategories();
+  }
+
+  Future<void> updateCategory(int id, String name, Color color) async {
+    // Maintain existing type for this category
+    final all = [..._expenseCategories, ..._incomeCategories];
+    final existing = all.firstWhere((c) => c.id == id);
+    final type = existing.type;
+
+    await dao.updateCategory(CategoriesCompanion(
+      id: Value(id),
+      name: Value(name),
+      type: Value(type),
+      colorValue: Value(color.value),
+    ));
     _loadCategories();
   }
 }
