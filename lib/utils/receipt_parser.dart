@@ -35,7 +35,14 @@ class ReceiptParser {
   static List<ParsedItem> parse(RecognizedText recognizedText) {
     // 1. Sortowanie i grupowanie linii (Twoja sprawdzona metoda)
     final rawText = _reconstructTextByCoordinates(recognizedText);
-    
+    return parseFromString(rawText);
+  }
+
+
+  /// Parse text directly from a raw (reconstructed) text string.
+  ///
+  /// Useful for unit tests where creating ML Kit `RecognizedText` is inconvenient.
+  static List<ParsedItem> parseFromString(String rawText) {
     // 2. Czyszczenie "polskich" liczb (spacja w środku: 12, 99 -> 12,99)
     String cleanedText = rawText.replaceAllMapped(
       RegExp(r'(\d+),\s+(\d{2})'), 
@@ -46,7 +53,6 @@ class ReceiptParser {
         .map((e) => e.trim())
         .where((e) => e.length > 1)
         .toList();
-
     // Regexy
     final priceRegex = RegExp(r'(\d+[,.]\d{2})\s*[A-Z]?$'); // Cena na końcu
     final discountRegex = RegExp(r'(RABAT|OPUST|-)\s*[:]*\s*(\d+[,.]\d{2})', caseSensitive: false); 
@@ -205,8 +211,56 @@ class ReceiptParser {
     
     // Usuwanie matematyki (ilość x cena) z nazwy
     name = name.replaceAll(RegExp(r'\d+\s*[,.]?\d*\s*[x*]\s*\d+[,.]\d{2}'), '');
-    
+
+    // Dodatkowo obetnij trailing tokeny typu: "t", "1SZT", "SZT", "x6.79", liczby
+    name = _stripTrailingQtyTokens(name);
+
     return name.trim();
+  }
+
+  static String _stripTrailingQtyTokens(String input) {
+    var parts = input.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+    if (parts.isEmpty) return input.trim();
+
+    // Patterns indicating quantity/marker/price fragments
+    final pureNumber = RegExp(r'^\d+[.,]?\d*$');
+    final qtyWithSzt = RegExp(r'^\d+\s*(?:SZT|szt)$', caseSensitive: false);
+    final sztSuffix = RegExp(r'^\d+(?:SZT|szt)$', caseSensitive: false);
+    final xWithNumber = RegExp(r'^[x×*]\s*\d+[.,]?\d*$');
+    final numberWithX = RegExp(r'^\d+[.,]?\d*\s*[x×*]\s*\d+[.,]?\d*');
+    final singleLetter = RegExp(r'^[A-Z]$', caseSensitive: false);
+    final numberWithTrailingLetter = RegExp(r'^\d+[.,]?\d*[A-Z]$', caseSensitive: false);
+    final sztOnly = RegExp(r'^(?:SZT|szt)$', caseSensitive: false);
+
+    // Remove trailing tokens that look like quantities/markers/prices
+    while (parts.isNotEmpty) {
+      final tok = parts.last;
+      final t = tok.replaceAll(RegExp(r'[,:]'), ''); // normalize
+
+      if (pureNumber.hasMatch(t) ||
+          qtyWithSzt.hasMatch(t) ||
+          sztSuffix.hasMatch(t) ||
+          xWithNumber.hasMatch(t) ||
+          numberWithX.hasMatch(t) ||
+          numberWithTrailingLetter.hasMatch(t) ||
+          singleLetter.hasMatch(t) ||
+          sztOnly.hasMatch(t) ||
+          // cases like '1SZT' without space
+          RegExp(r'^\d+SZT$', caseSensitive: false).hasMatch(t)) {
+        parts.removeLast();
+        continue;
+      }
+
+      // also drop tokens that are all uppercase and short (like 'C', 'T', 'KG')
+      if (t.length <= 3 && RegExp(r'^[A-ZĄĘÓĆŁŃŚŻŹ]+\d*$', caseSensitive: false).hasMatch(t)) {
+        parts.removeLast();
+        continue;
+      }
+
+      break;
+    }
+
+    return parts.join(' ');
   }
 
   // Twoja sprawdzona metoda sortowania linii

@@ -76,6 +76,10 @@ class GoalWithProgress {
 class AppDb extends _$AppDb {
   AppDb() : super(_openConnection());
 
+  /// Test constructor that accepts a custom [QueryExecutor].
+  /// Use `NativeDatabase.memory()` for in-memory tests.
+  AppDb.test(QueryExecutor executor) : super(executor);
+
   @override
   int get schemaVersion => 5; // bumped to apply new column migrations
 

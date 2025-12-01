@@ -13,7 +13,22 @@ class ExpensesState extends ChangeNotifier {
   // Pending budget deltas collected while the app is active.
   final Map<String, double> _pendingBudgetDeltas = {};
 
-  ExpensesState(this.dao, this.budgetsDao, this.categoriesDao) {
+  // If [startListening] is false, the instance won't subscribe to the DAO stream
+  // immediately. Tests can create the object with startListening: false and
+  // call [start] later after performing initial DB operations so the stream
+  // emits the current DB state without racing against other async cleanup.
+  ExpensesState(this.dao, this.budgetsDao, this.categoriesDao, {bool startListening = true}) {
+    if (startListening) {
+      _init();
+      _loadCategoryCache();
+    } else {
+      _loadCategoryCache();
+    }
+  }
+
+  /// Start listening to DAO streams and load the category cache.
+  /// Useful in tests to delay subscription until after setup.
+  void start() {
     _init();
     _loadCategoryCache();
   }
