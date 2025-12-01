@@ -87,6 +87,45 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
     }
   }
 
+  Future<void> _showAddItemDialog() async {
+    final nameCtrl = TextEditingController();
+    final amountCtrl = TextEditingController();
+    String selCategory = 'Inne';
+
+    await showDialog<void>(context: context, builder: (ctx) {
+      return AlertDialog(
+        title: const Text('Dodaj pozycję ręcznie'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Nazwa')),
+              TextField(controller: amountCtrl, decoration: const InputDecoration(labelText: 'Kwota'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+              const SizedBox(height: 8),
+              CategorySelector(
+                type: 'expense',
+                initialValue: selCategory,
+                onChanged: (v) => selCategory = v,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Anuluj')),
+          ElevatedButton(onPressed: () {
+            final n = nameCtrl.text.trim();
+            final a = double.tryParse(amountCtrl.text.replaceAll(',', '.')) ?? 0.0;
+            if (n.isEmpty) return;
+            setState(() {
+              _items.add(ParsedItem(name: n, amount: a, category: selCategory));
+            });
+            Navigator.of(ctx).pop();
+          }, child: const Text('Dodaj')),
+        ],
+      );
+    });
+  }
+
   double get _currentTotal => _items.fold(0.0, (sum, item) => sum + item.amount);
 
   Future<void> _saveReceipt() async {
@@ -198,93 +237,111 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    itemCount: _items.length,
-                    itemBuilder: (context, index) {
-                      final item = _items[index];
+                : Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton.icon(
+                              onPressed: _showAddItemDialog,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Dodaj pozycję'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: _items.length,
+                          itemBuilder: (context, index) {
+                            final item = _items[index];
 
-                      return Card(
-                        key: ObjectKey(item),
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        child: ExpansionTile(
-                          title: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  initialValue: item.name,
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(vertical: 8),
-                                  ),
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                  onChanged: (val) => item.name = val,
-                                ),
-                              ),
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  SizedBox(
-                                    width: 80,
-                                    child: TextFormField(
-                                      initialValue: item.amount.toStringAsFixed(2),
-                                      keyboardType: TextInputType.number,
-                                      textAlign: TextAlign.end,
-                                      decoration: const InputDecoration(
-                                        suffixText: ' zł',
-                                        border: InputBorder.none,
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(vertical: 8),
+                            return Card(
+                              key: ObjectKey(item),
+                              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              child: ExpansionTile(
+                                title: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        initialValue: item.name,
+                                        decoration: const InputDecoration(
+                                          border: InputBorder.none,
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                        ),
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                        onChanged: (val) => item.name = val,
                                       ),
-                                      onChanged: (val) {
+                                    ),
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        SizedBox(
+                                          width: 80,
+                                          child: TextFormField(
+                                            initialValue: item.amount.toStringAsFixed(2),
+                                            keyboardType: TextInputType.number,
+                                            textAlign: TextAlign.end,
+                                            decoration: const InputDecoration(
+                                              suffixText: ' zł',
+                                              border: InputBorder.none,
+                                              isDense: true,
+                                              contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                            ),
+                                            onChanged: (val) {
+                                              setState(() {
+                                                item.amount = double.tryParse(val.replaceAll(',', '.')) ?? 0.0;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                        if (item.originalPrice != null && item.originalPrice! > item.amount)
+                                          Text(
+                                            'z ${item.originalPrice!.toStringAsFixed(2)} zł',
+                                            style: const TextStyle(fontSize: 11, color: Colors.green, decoration: TextDecoration.lineThrough),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                subtitle: Text(item.category, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    child: CategorySelector(
+                                      type: 'expense',
+                                      initialValue: item.category,
+                                      isLoaded: !_isLoading,
+                                      onChanged: (newCat) {
                                         setState(() {
-                                          item.amount = double.tryParse(val.replaceAll(',', '.')) ?? 0.0;
+                                          item.category = newCat;
                                         });
                                       },
                                     ),
                                   ),
-                                  if (item.originalPrice != null && item.originalPrice! > item.amount)
-                                    Text(
-                                      'z ${item.originalPrice!.toStringAsFixed(2)} zł',
-                                      style: const TextStyle(fontSize: 11, color: Colors.green, decoration: TextDecoration.lineThrough),
-                                    ),
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        _items.removeAt(index);
+                                      });
+                                    },
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    label: const Text('Usuń pozycję', style: TextStyle(color: Colors.red)),
+                                  )
                                 ],
                               ),
-                            ],
-                          ),
-                          subtitle: Text(item.category, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: CategorySelector(
-                                type: 'expense',
-                                initialValue: item.category,
-                                isLoaded: !_isLoading,
-                                onChanged: (newCat) {
-                                  setState(() {
-                                    item.category = newCat;
-                                  });
-                                },
-                              ),
-                            ),
-                            TextButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  _items.removeAt(index);
-                                });
-                              },
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              label: const Text('Usuń pozycję', style: TextStyle(color: Colors.red)),
-                            )
-                          ],
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: SizedBox(

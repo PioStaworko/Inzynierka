@@ -26,6 +26,8 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.0
   flutter_local_notifications: ^19.5.0
   timezone: ^0.10.1
+  excel: ^2.0.0
+  open_file: ^3.2.1
   
 
 dev_dependencies:

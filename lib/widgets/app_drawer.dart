@@ -9,6 +9,7 @@ import '../screens/manage_categories_screen.dart';
 import '../providers/theme_provider.dart';
 import '../screens/budgets_screen.dart';
 import '../screens/savings_goals_screen.dart';
+import '../services/report_service.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -115,6 +116,30 @@ class AppDrawer extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (ctx) => const ManageCategoriesScreen()),
               );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.insert_drive_file),
+            title: const Text('Generuj raport (.xlsx)'),
+            onTap: () async {
+              Navigator.of(context).pop();
+              // Show progress dialog
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (ctx) => const Center(child: CircularProgressIndicator()),
+              );
+
+              final path = await ReportService.generateFullReport(context);
+
+              // Close progress
+              Navigator.of(context, rootNavigator: true).pop();
+
+              if (path != null) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Raport zapisano: $path')));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Generowanie raportu nie powiodło się')));
+              }
             },
           ),
           // Motyw - szybkie przełączanie (System / Jasny / Ciemny)

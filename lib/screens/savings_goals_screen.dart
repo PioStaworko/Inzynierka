@@ -22,11 +22,6 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
         padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
-            ElevatedButton.icon(
-              onPressed: () => _showAddDialog(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Dodaj cel'),
-            ),
             const SizedBox(height: 12),
             Expanded(
               child: goals.isEmpty
@@ -126,6 +121,10 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddDialog(context),
+        child: const Icon(Icons.add),
+      ),
     );
   }
 
@@ -137,98 +136,114 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
 
     final formKey = GlobalKey<FormState>();
 
-    await showDialog(
+    await showModalBottomSheet<void>(
       context: ctx,
-      builder: (dctx) {
-        return AlertDialog(
-          title: const Text('Nowy cel oszczędnościowy'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: titleCtrl,
-                    decoration: const InputDecoration(labelText: 'Tytuł'),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Wprowadź tytuł' : null,
-                  ),
-                  TextFormField(
-                    controller: amountCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'Kwota do odłożenia (PLN)'),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Wprowadź kwotę';
-                      final p = double.tryParse(v.replaceAll(',', '.'));
-                      if (p == null || p <= 0) return 'Niepoprawna kwota';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: ctx,
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2100),
-                            );
-                            if (picked != null) start = picked;
-                          },
-                          child: const Text('Wybierz datę początku'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: ctx,
-                              initialDate: DateTime.now().add(const Duration(days: 30)),
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2100),
-                            );
-                            if (picked != null) end = picked;
-                          },
-                          child: const Text('Wybierz datę końca'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+      isScrollControlled: true,
+      builder: (sheetCtx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetCtx).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 16,
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(dctx).pop(), child: const Text('Anuluj')),
-            ElevatedButton(
-              onPressed: () async {
-                if (!formKey.currentState!.validate()) return;
-                if (start == null || end == null) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Wybierz okres')));
-                  return;
-                }
-                final title = titleCtrl.text.trim();
-                final amount = double.parse(amountCtrl.text.replaceAll(',', '.'));
-                try {
-                  await Provider.of<SavingsGoalsProvider>(ctx, listen: false).addGoal(title, amount, start!, end!);
-                  if (mounted) {
-                    Navigator.of(dctx).pop();
-                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Cel dodany')));
-                  }
-                } catch (e) {
-                  // Show error so user sees what went wrong when insertion fails
-                  if (mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Błąd dodawania celu: $e')));
-                  }
-                }
-              },
-              child: const Text('Dodaj'),
-            ),
-          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Nowy cel oszczędnościowy', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: titleCtrl,
+                      decoration: const InputDecoration(labelText: 'Tytuł'),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Wprowadź tytuł' : null,
+                    ),
+                    TextFormField(
+                      controller: amountCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(labelText: 'Kwota do odłożenia (PLN)'),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Wprowadź kwotę';
+                        final p = double.tryParse(v.replaceAll(',', '.'));
+                        if (p == null || p <= 0) return 'Niepoprawna kwota';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final picked = await showDatePicker(
+                                context: sheetCtx,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked != null) start = picked;
+                            },
+                            child: const Text('Wybierz datę początku'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final picked = await showDatePicker(
+                                context: sheetCtx,
+                                initialDate: DateTime.now().add(const Duration(days: 30)),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked != null) end = picked;
+                            },
+                            child: const Text('Wybierz datę końca'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(onPressed: () => Navigator.of(sheetCtx).pop(), child: const Text('Anuluj')),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () async {
+                            if (!formKey.currentState!.validate()) return;
+                            if (start == null || end == null) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Wybierz okres')));
+                              return;
+                            }
+                            final title = titleCtrl.text.trim();
+                            final amount = double.parse(amountCtrl.text.replaceAll(',', '.'));
+                            try {
+                              await Provider.of<SavingsGoalsProvider>(ctx, listen: false).addGoal(title, amount, start!, end!);
+                              if (mounted) {
+                                Navigator.of(sheetCtx).pop();
+                                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Cel dodany')));
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Błąd dodawania celu: $e')));
+                              }
+                            }
+                          },
+                          child: const Text('Dodaj'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );

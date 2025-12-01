@@ -29,6 +29,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   DateTime? _selectedDate;
   String _selectedCategory = 'Inne'; // Domyślna kategoria
   bool _isSaving = false;
+  // Editable product lines for receipts
+  List<_EditableItem> _items = [];
 
   @override
   void initState() {
@@ -45,6 +47,24 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       } catch (_) {
         _selectedCategory = 'Inne';
       }
+      // Load items for this expense if present in ExpensesState
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
+          final expState = Provider.of<ExpensesState>(context, listen: false);
+          final match = expState.recent.firstWhere((r) => r.expense.id == e.id, orElse: () => ExpenseWithItems(e, []));
+          final catProv = Provider.of<CategoryProvider>(context, listen: false);
+          _items = match.items.map((it) {
+            final ed = _EditableItem.fromExpenseItem(it);
+            try {
+              ed.categoryName = it.categoryId != null ? catProv.getNameForId(it.categoryId) : null;
+            } catch (_) {
+              ed.categoryName = null;
+            }
+            return ed;
+          }).toList();
+          setState(() {});
+        } catch (_) {}
+      });
     } else {
       _titleController = TextEditingController();
       _amountController = TextEditingController();
@@ -72,6 +92,50 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         _selectedDate = pickedDate;
       });
     }
+  }
+
+  Future<void> _showAddItemDialog() async {
+    final nameCtrl = TextEditingController();
+    final amountCtrl = TextEditingController();
+    String selCategory = 'Inne';
+
+    await showDialog<void>(context: context, builder: (ctx) {
+      return AlertDialog(
+        title: const Text('Dodaj pozycję'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Nazwa')),
+              TextField(controller: amountCtrl, decoration: const InputDecoration(labelText: 'Kwota'), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+              const SizedBox(height: 8),
+              CategorySelector(
+                type: 'expense',
+                initialValue: selCategory,
+                onChanged: (v) => selCategory = v,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Anuluj')),
+          ElevatedButton(onPressed: () {
+            final n = nameCtrl.text.trim();
+            final a = double.tryParse(amountCtrl.text.replaceAll(',', '.')) ?? 0.0;
+            if (n.isEmpty) return;
+            int? catId;
+            try {
+              final catProv = Provider.of<CategoryProvider>(context, listen: false);
+              catId = catProv.expenseCategories.firstWhere((c) => c.name == selCategory).id;
+            } catch (_) { catId = null; }
+            setState(() {
+              _items.add(_EditableItem(name: n, amount: a, categoryId: catId, categoryName: selCategory));
+            });
+            Navigator.of(ctx).pop();
+          }, child: const Text('Dodaj')),
+        ],
+      );
+    });
   }
 
   Future<void> _submitData() async {
@@ -104,16 +168,32 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         date: _selectedDate!,
         categoryId: drift.Value(selectedId),
       );
-      await provider.updateExpense(updatedExpense);
+      // Map editable items to Drift companions
+      final companions = _items.map((it) => ExpenseItemsCompanion.insert(
+        expenseId: 0,
+        name: it.name,
+        amount: it.amount,
+        categoryId: drift.Value(it.categoryId),
+      )).toList();
+
+      await provider.updateExpenseWithItems(updatedExpense, companions);
     } else {
       // DODAWANIE
       // Provider używa teraz nazwanych argumentów
+      // Map any manual items to companions
+      final companions = _items.map((it) => ExpenseItemsCompanion.insert(
+        expenseId: 0,
+        name: it.name,
+        amount: it.amount,
+        categoryId: drift.Value(it.categoryId),
+      )).toList();
+
       await provider.addExpense(
         title: _titleController.text,
         amount: enteredAmount,
         date: _selectedDate!,
         category: _selectedCategory,
-        items: [], // Pusta lista produktów dla ręcznego wpisu
+        items: companions,
       );
     }
 
@@ -161,6 +241,92 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               ),
               
               const SizedBox(height: 16),
+              // Manual product lines (for receipts) - visible for both add and edit
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Pozycje (opcjonalnie)', style: TextStyle(fontWeight: FontWeight.bold)),
+                          TextButton.icon(
+                            onPressed: _showAddItemDialog,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Dodaj pozycję'),
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (_items.isEmpty) const Text('Brak pozycji. Możesz dodać ręcznie.')
+                      else
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _items.length,
+                          itemBuilder: (ctx, idx) {
+                            final it = _items[idx];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              child: ExpansionTile(
+                                title: Text(it.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: Text('${it.amount.toStringAsFixed(2)} zł — ${it.categoryName ?? 'Inne'}'),
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+                                    child: Column(
+                                      children: [
+                                        TextFormField(
+                                          initialValue: it.name,
+                                          decoration: const InputDecoration(labelText: 'Nazwa pozycji'),
+                                          onChanged: (v) => it.name = v,
+                                        ),
+                                        TextFormField(
+                                          initialValue: it.amount.toStringAsFixed(2),
+                                          decoration: const InputDecoration(labelText: 'Kwota', suffixText: 'zł'),
+                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                          onChanged: (v) => it.amount = double.tryParse(v.replaceAll(',', '.')) ?? 0.0,
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(top:8.0),
+                                          child: CategorySelector(
+                                            type: 'expense',
+                                            initialValue: it.categoryName ?? 'Inne',
+                                            onChanged: (val) async {
+                                              it.categoryName = val;
+                                              // resolve id if possible
+                                              try {
+                                                final catProv = Provider.of<CategoryProvider>(context, listen: false);
+                                                it.categoryId = catProv.expenseCategories.firstWhere((c) => c.name == val).id;
+                                              } catch (_) { it.categoryId = null; }
+                                              setState(() {});
+                                            },
+                                          ),
+                                        ),
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: TextButton.icon(
+                                            onPressed: () {
+                                              setState(() { _items.removeAt(idx); });
+                                            },
+                                            icon: const Icon(Icons.delete, color: Colors.red),
+                                            label: const Text('Usuń', style: TextStyle(color: Colors.red)),
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  )
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -180,4 +346,22 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       ),
     );
   }
+}
+
+class _EditableItem {
+  int? id;
+  int? categoryId;
+  String? categoryName;
+  String name;
+  double amount;
+
+  _EditableItem({this.id, this.categoryId, this.categoryName, required this.name, required this.amount});
+
+  factory _EditableItem.fromExpenseItem(ExpenseItem it) => _EditableItem(
+    id: it.id,
+    categoryId: it.categoryId,
+    categoryName: null,
+    name: it.name,
+    amount: it.amount,
+  );
 }
