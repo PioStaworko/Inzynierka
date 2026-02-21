@@ -1,14 +1,10 @@
-// lib/widgets/monthly_bar_chart.dart
-
 import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-// Import bazy danych, bo stamtąd pochodzą klasy ExpenseWithItems i Income
 import '../data/app_database.dart'; 
 
 class MonthlyBarChart extends StatelessWidget {
-  // Lista "opakowanych" wydatków (nagłówek + pozycje)
   final List<ExpenseWithItems> expenses; 
   final List<Income> incomes;
 
@@ -28,22 +24,18 @@ class MonthlyBarChart extends StatelessWidget {
 
     final currentYear = DateTime.now().year;
 
-    // Sumujemy wydatki
     for (var entry in expenses) {
-      // Dostęp do daty i kwoty przez .expense
       if (entry.expense.date.year == currentYear) {
         monthlyData[entry.expense.date.month]![0] += entry.expense.amount;
       }
     }
 
-    // Sumujemy przychody
     for (var i in incomes) {
       if (i.date.year == currentYear) {
         monthlyData[i.date.month]![1] += i.amount;
       }
     }
 
-    // Reszta kodu bez zmian (rysowanie wykresu)
     double maxY = 0;
     monthlyData.forEach((key, value) {
       maxY = max(maxY, max(value[0], value[1]));

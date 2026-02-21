@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:drift/drift.dart' as drift; // Alias, żeby nie mylić typów
+import 'package:drift/drift.dart' as drift;
 import '../data/app_database.dart';
 
 class RecurringIncomeProvider extends ChangeNotifier {
@@ -17,7 +17,6 @@ class RecurringIncomeProvider extends ChangeNotifier {
 
   List<RecurringIncome> get allTemplates => List.unmodifiable(_templates);
 
-  // Dodawanie (używamy Companion do wstawiania)
   Future<void> addRecurringIncome(String title, double amount, String source, String frequency, DateTime nextDate) async {
     final entry = RecurringIncomesCompanion.insert(
       title: title,
@@ -30,13 +29,11 @@ class RecurringIncomeProvider extends ChangeNotifier {
     _loadTemplates();
   }
 
-  // Usuwanie
   Future<void> deleteRecurringIncome(int templateId) async {
     await dao.deleteRecurringIncome(templateId);
     _loadTemplates();
   }
 
-  // Aktualizacja (używamy Companion z ID)
   Future<void> updateRecurringIncome(RecurringIncome item) async {
     final entry = RecurringIncomesCompanion(
       id: drift.Value(item.id),

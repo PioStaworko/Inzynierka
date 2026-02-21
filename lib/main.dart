@@ -42,7 +42,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Udostępniamy bazę danych
         Provider<AppDb>.value(value: appDb),
         
         ChangeNotifierProvider(create: (_) => ExpensesState(appDb.expensesDao, appDb.budgetsDao, appDb.categoriesDao)),
@@ -65,11 +64,11 @@ class MyApp extends StatelessWidget {
               '/home': (ctx) => const MyHomePage(),
               '/initial_balance': (ctx) => const InitialBalanceScreen(),
             },
-            // Primary color/seed for the app - use dark green
+
             theme: ThemeData.from(
               colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF01743E)),
             ).copyWith(
-              // keep some Material defaults but tune AppBar
+
               appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF01743E)),
             ),
             darkTheme: ThemeData.from(
@@ -88,8 +87,7 @@ class MyApp extends StatelessWidget {
             ),
             ),
             onPaused: () {
-              // When the app goes to background, process pending budget checks so
-              // notifications will be shown after leaving the app.
+
               try {
                 final expenses = Provider.of<ExpensesState>(context, listen: false);
                 expenses.processPendingBudgetChecks();

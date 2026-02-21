@@ -1,10 +1,7 @@
-// lib/screens/verify_receipt_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:drift/drift.dart' as drift;
 
-// Importujemy bazę danych i parser
 import '../data/app_database.dart';
 import '../utils/receipt_parser.dart'; // Tu jest ParsedItem
 import '../providers/expenses_provider.dart';
@@ -27,9 +24,8 @@ class VerifyReceiptScreen extends StatefulWidget {
 class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
   late List<ParsedItem> _items;
   final _titleController = TextEditingController(text: 'Zakupy (Paragon)');
-  late RecurringDao _recurringDao; // DAO do obsługi ProductMappings
+  late RecurringDao _recurringDao;
 
-  // Nowy stan ładowania: lista pojawi się dopiero po zakończeniu sprawdzania bazy
   bool _isLoading = true;
 
   @override
@@ -37,7 +33,6 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
     super.initState();
     _items = List.from(widget.parsedItems);
 
-    // Uzyskaj DAO po pierwszym frame, żeby mieć bezpieczny context
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final db = context.read<AppDb>();
       _recurringDao = db.recurringDao;
@@ -46,7 +41,6 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
   }
 
   Future<void> _prepare() async {
-    // Wykonaj autokategoryzację i inne sprawdzenia przed pokazaniem listy
     await _autoCategorizeItems();
     if (mounted) setState(() => _isLoading = false);
   }
@@ -133,7 +127,6 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
 
     final db = context.read<AppDb>();
 
-    // 1) Learn product mappings
     final allCats = await db.categoriesDao.getAllCategories();
     for (var item in _items) {
       if (item.rawId != null && item.category != 'Inne') {
@@ -166,7 +159,6 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
       }
     }
 
-    // 2) Save expense and its items
     final freshCats = await db.categoriesDao.getAllCategories();
     final expenseItems = _items.map((i) {
       Category? matched;
@@ -233,7 +225,6 @@ class _VerifyReceiptScreenState extends State<VerifyReceiptScreen> {
             ),
           ),
 
-          // Lista wyświetlana dopiero po zakończeniu sprawdzeń (loading)
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())

@@ -1,5 +1,3 @@
-// lib/screens/settings_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
@@ -13,7 +11,6 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Ustawienia')),
       body: ListView(
         children: [
-          // Zamiast pojedynczego Switcha dajemy trójstanowy wybór (System / Jasny / Ciemny)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Consumer<ThemeProvider>(
@@ -38,7 +35,6 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const Divider(),
-          // Miejsce na przyszłe opcje, np. reset danych
           ListTile(
             leading: const Icon(Icons.delete_forever, color: Colors.red),
             title: const Text('Wyczyść wszystkie dane', style: TextStyle(color: Colors.red)),
@@ -61,8 +57,6 @@ class SettingsScreen extends StatelessWidget {
           TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Anuluj')),
           TextButton(
             onPressed: () async {
-              // Tu logika czyszczenia - możesz ją zaimplementować później
-              // Wymagałoby to dodania metody clearAll() w każdym providerze
               Navigator.of(ctx).pop();
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Funkcja czyszczenia w przygotowaniu')));
             },

@@ -6,12 +6,10 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
-// Import tabel
 import 'tables.dart'; 
 
 part 'app_database.g.dart';
 
-// Klasy pomocnicze (DTO)
 class ExpenseWithItems {
   final Expense expense;
   final List<ExpenseItem> items;
@@ -27,7 +25,6 @@ class BudgetWithProgress {
   double get percent => (spent / budget.amountLimit) * 100;
 }
 
-// Lightweight in-file representation of a savings goal row (avoids depending on generated types)
 class SimpleSavingsGoal {
   final int id;
   final String title;
@@ -45,15 +42,10 @@ class GoalWithProgress {
 
   GoalWithProgress(this.goal, this.incomes, this.spent);
 
-  // === NOWA LOGIKA ===
-  // Oszczędzone = Przychody w tym okresie MINUS Wydatki w tym okresie
   double get savedAmount => incomes - spent;
 
-  // Postęp to Oszczędzone / Cel
   double get progress {
     if (goal.targetAmount == 0) return 0.0;
-    // clamp(0.0, 1.0) zapewnia, że pasek nie wyjdzie poza zakres 
-    // (nawet jak jesteśmy na minusie lub przekroczyliśmy cel)
     return (savedAmount / goal.targetAmount).clamp(0.0, 1.0);
   }
 
@@ -76,25 +68,19 @@ class GoalWithProgress {
 class AppDb extends _$AppDb {
   AppDb() : super(_openConnection());
 
-  /// Test constructor that accepts a custom [QueryExecutor].
-  /// Use `NativeDatabase.memory()` for in-memory tests.
   AppDb.test(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 5; // bumped to apply new column migrations
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
-          // Fresh DB: create all tables
           await m.createAll();
         },
         onUpgrade: (m, from, to) async {
-          // If upgrading from an older schema, ensure missing tables are created.
-          // Using createAll() is safe here because Drift will ignore tables that already exist.
           if (from < to) {
             await m.createAll();
-            // Add new nullable FK columns for normalization (non-destructive)
             try {
               await customStatement('ALTER TABLE budgets ADD COLUMN category_id INTEGER');
             } catch (_) {}
@@ -104,7 +90,6 @@ class AppDb extends _$AppDb {
             try {
               await customStatement('ALTER TABLE product_mappings ADD COLUMN default_category_id INTEGER');
             } catch (_) {}
-            // Ensure expenses and expense_items have category_id column for normalization
             try {
               await customStatement('ALTER TABLE expenses ADD COLUMN category_id INTEGER');
             } catch (_) {}
@@ -112,7 +97,6 @@ class AppDb extends _$AppDb {
               await customStatement('ALTER TABLE expense_items ADD COLUMN category_id INTEGER');
             } catch (_) {}
 
-            // Backfill newly added category_id columns from textual category fields
             try {
               await customStatement('UPDATE budgets SET category_id = (SELECT id FROM categories WHERE categories.name = budgets.category) WHERE category_id IS NULL');
             } catch (_) {}
@@ -122,14 +106,12 @@ class AppDb extends _$AppDb {
             try {
               await customStatement('UPDATE product_mappings SET default_category_id = (SELECT id FROM categories WHERE categories.name = product_mappings.default_category) WHERE default_category_id IS NULL');
             } catch (_) {}
-            // Backfill expenses.category_id from possible textual category columns
             try {
               await customStatement('UPDATE expenses SET category_id = (SELECT id FROM categories WHERE categories.name = expenses.category) WHERE category_id IS NULL');
             } catch (_) {}
             try {
               await customStatement('UPDATE expenses SET category_id = (SELECT id FROM categories WHERE categories.name = expenses.category_name) WHERE category_id IS NULL');
             } catch (_) {}
-            // Backfill expense_items.category_id from possible textual columns
             try {
               await customStatement('UPDATE expense_items SET category_id = (SELECT id FROM categories WHERE categories.name = expense_items.category) WHERE category_id IS NULL');
             } catch (_) {}
@@ -137,10 +119,6 @@ class AppDb extends _$AppDb {
               await customStatement('UPDATE expense_items SET category_id = (SELECT id FROM categories WHERE categories.name = expense_items.category_name) WHERE category_id IS NULL');
             } catch (_) {}
 
-            // Some older DB versions kept a non-null `category_name` text column
-            // which causes INSERTs to fail if new code doesn't provide it.
-            // Detect that situation and recreate the table with the
-            // normalized schema (only `category_id`) while preserving data.
             try {
               final pragma = await customSelect('PRAGMA table_info(expenses)').get();
               final hasCategoryName = pragma.any((r) {
@@ -153,8 +131,6 @@ class AppDb extends _$AppDb {
                 final notnull = col.read<int>('notnull');
                 final dflt = col.read<Object?>('dflt_value');
 
-                // If the column is NOT NULL and has no default, existing INSERTs
-                // (which don't specify category_name) will fail. Rebuild.
                 if (notnull == 1 && dflt == null) {
                   await customStatement('ALTER TABLE expenses RENAME TO expenses_old');
                   await customStatement('CREATE TABLE expenses_new (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, amount REAL NOT NULL, date INTEGER NOT NULL, category_id INTEGER REFERENCES categories (id))');
@@ -169,7 +145,6 @@ class AppDb extends _$AppDb {
               }
             } catch (_) {}
 
-            // Repeat same defensive table-rebuild for expense_items
             try {
               final pragma2 = await customSelect('PRAGMA table_info(expense_items)').get();
               final hasCatName2 = pragma2.any((r) => r.read<String>('name') == 'category_name');
@@ -191,7 +166,6 @@ class AppDb extends _$AppDb {
               }
             } catch (_) {}
 
-            // Create helpful indices
             try {
               await customStatement('CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date)');
             } catch (_) {}
@@ -205,17 +179,13 @@ class AppDb extends _$AppDb {
         },
       );
   
-  // Fabryka do tworzenia instancji (przydatna w main.dart)
   static Future<AppDb> create() async {
     return AppDb();
   }
 
-  // --- Helpers for Savings Goals (non-generated API so provider can use without build_runner) ---
   Stream<List<GoalWithProgress>> watchAllGoalsStream() async* {
-    // 1. Definiujemy zapytanie o cele
     final query = customSelect(
       'SELECT id, title, target_amount, start_date, end_date, created_at FROM savings_goals ORDER BY created_at DESC',
-      // WAŻNE: Tutaj mówimy Driftowi, jakie tabele mają wpływ na ten widok
       readsFrom: {
         savingsGoals, 
         incomes, 
@@ -224,7 +194,6 @@ class AppDb extends _$AppDb {
       }, 
     );
 
-    // 2. Mapujemy wyniki
     final rowsStream = query.map((row) {
       final id = row.read<int>('id');
       final title = row.read<String>('title');
@@ -242,18 +211,15 @@ class AppDb extends _$AppDb {
       );
     }).watch();
 
-    // 3. Przeliczamy postęp dla każdego celu (to się uruchomi przy każdej zmianie w w/w tabelach)
     await for (final goals in rowsStream) {
       final list = <GoalWithProgress>[];
       for (final g in goals) {
         try {
-          // Pobieramy sumy dla danego zakresu dat
           final incomesSum = await _getIncomesForPeriod(g.startDate, g.endDate);
           final spentSum = await _getSpendingForPeriod(g.startDate, g.endDate);
           
           list.add(GoalWithProgress(g, incomesSum, spentSum));
         } catch (e) {
-          // W razie błędu dodajemy pusty postęp, żeby nie wywalić UI
           list.add(GoalWithProgress(g, 0.0, 0.0));
         }
       }
@@ -262,8 +228,6 @@ class AppDb extends _$AppDb {
   }
 
   Future<void> addGoalRaw(String title, double target, DateTime start, DateTime end) async {
-    // Insert using raw statement to avoid depending on generated Companion classes.
-    // Wrap in try/catch and print to help debugging when the table or types are missing.
     try {
       await customStatement(
         'INSERT INTO savings_goals (title, target_amount, start_date, end_date, created_at) VALUES (?, ?, ?, ?, ?)',
@@ -276,13 +240,10 @@ class AppDb extends _$AppDb {
         ],
       );
       if (const bool.fromEnvironment('dart.vm.product') == false) {
-        // ignore: avoid_print
         print('[AppDb] addGoalRaw: inserted goal "$title" target=$target start=$start end=$end');
       }
     } catch (e, st) {
-      // Bubble up after logging so caller can show feedback
       if (const bool.fromEnvironment('dart.vm.product') == false) {
-        // ignore: avoid_print
         print('[AppDb] addGoalRaw ERROR: $e\n$st');
       }
       rethrow;
@@ -329,7 +290,6 @@ LazyDatabase _openConnection() {
   });
 }
 
-// --- DAO DLA WYDATKÓW ---
 @DriftAccessor(tables: [Expenses, ExpenseItems])
 class ExpensesDao extends DatabaseAccessor<AppDb> with _$ExpensesDaoMixin {
   ExpensesDao(AppDb db) : super(db);
@@ -374,7 +334,6 @@ class ExpensesDao extends DatabaseAccessor<AppDb> with _$ExpensesDaoMixin {
   Future<void> updateExpense(ExpensesCompanion entry) => update(expenses).replace(entry);
 }
 
-// --- DAO DLA BUDŻETÓW ---
 @DriftAccessor(tables: [Budgets, Expenses, ExpenseItems])
 class BudgetsDao extends DatabaseAccessor<AppDb> with _$BudgetsDaoMixin {
   BudgetsDao(AppDb db) : super(db);
@@ -393,10 +352,8 @@ class BudgetsDao extends DatabaseAccessor<AppDb> with _$BudgetsDaoMixin {
           results.add(BudgetWithProgress(budget, spent));
         } catch (e, st) {
           if (const bool.fromEnvironment('dart.vm.product') == false) {
-            // ignore: avoid_print
             print('Error computing budget progress for ${budget.id}: $e\n$st');
           }
-          // If computation fails for this budget, still add with 0 spent so UI can render.
           results.add(BudgetWithProgress(budget, 0.0));
         }
       }
@@ -408,7 +365,6 @@ class BudgetsDao extends DatabaseAccessor<AppDb> with _$BudgetsDaoMixin {
     DateTime start;
     final now = DateTime.now();
 
-    // Logika daty
     if (budget.period == 'week') {
       start = now.subtract(Duration(days: now.weekday - 1));
       start = DateTime(start.year, start.month, start.day);
@@ -418,8 +374,6 @@ class BudgetsDao extends DatabaseAccessor<AppDb> with _$BudgetsDaoMixin {
       start = DateTime(now.year, now.month, 1);
     }
 
-    // Zapytanie SQL
-    // 1) Suma z pozycji (ExpenseItems) powiązanych z wydatkami
     final itemsQuery = select(expenseItems).join([
       innerJoin(expenses, expenses.id.equalsExp(expenseItems.expenseId))
     ]);
@@ -430,7 +384,6 @@ class BudgetsDao extends DatabaseAccessor<AppDb> with _$BudgetsDaoMixin {
             expenses.date.isBiggerOrEqualValue(start),
       );
     } else {
-      // No categoryId present; match nothing for items
       itemsQuery.where(expenseItems.id.equals(-1));
       itemsQuery.where(expenses.date.isBiggerOrEqualValue(start));
     }
@@ -441,44 +394,32 @@ class BudgetsDao extends DatabaseAccessor<AppDb> with _$BudgetsDaoMixin {
       itemsTotal += a ?? 0.0;
     }
 
-    // 2) Suma z nagłówków wydatków (Expenses) które nie mają pozycji
     final expensesQuery = select(expenses);
     if (budget.categoryId != null) {
       expensesQuery.where((t) => t.categoryId.equals(budget.categoryId!) & t.date.isBiggerOrEqualValue(start));
     } else {
-      // No categoryId -> match nothing for expenses
       expensesQuery.where((t) => t.id.equals(-1));
     }
 
     final expenseRows = await expensesQuery.get();
     double expensesTotal = 0.0;
     for (final e in expenseRows) {
-      // Jeśli dany expense ma powiązane pozycje, to ich suma już została policzona
-      // jednak w Twoim modelu paragonów (ExpenseWithItems) zwykły wydatek ma pustą listę items,
-      // więc nie dublujemy tutaj — sumujemy wszystkie nagłówki.
       expensesTotal += e.amount;
     }
 
-    // Zwróć łączną sumę
     return itemsTotal + expensesTotal;
   }
   
   Future<List<Budget>> getBudgetsForCategory(String category) async {
-    // Try to resolve category name to id first
     final cats = await (select(categories)..where((c) => c.name.equals(category))).get();
     if (cats.isNotEmpty) {
       final id = cats.first.id;
       return (select(budgets)..where((t) => t.categoryId.equals(id))).get();
     }
-    // No matching category name -> return empty list (no budgets for that name)
     return <Budget>[];
   }
 }
 
-// --- POZOSTAŁE DAO (SKRÓCONE DLA CZYTELNOŚCI - ZOSTAJĄ BEZ ZMIAN) ---
-// Wklej tu IncomesDao, CategoriesDao, RecurringDao z poprzednich instrukcji,
-// jeśli ich nie masz w tym pliku. Powyżej podałem tylko ExpensesDao i BudgetsDao, 
-// bo w nich były zmiany. Upewnij się, że masz wszystkie DAO zdefiniowane w pliku!
 @DriftAccessor(tables: [Incomes])
 class IncomesDao extends DatabaseAccessor<AppDb> with _$IncomesDaoMixin {
   IncomesDao(AppDb db) : super(db);
@@ -504,7 +445,6 @@ class CategoriesDao extends DatabaseAccessor<AppDb> with _$CategoriesDaoMixin {
 @DriftAccessor(tables: [RecurringExpenses, RecurringIncomes, ProductMappings])
 class RecurringDao extends DatabaseAccessor<AppDb> with _$RecurringDaoMixin {
   RecurringDao(AppDb db) : super(db);
-  // Recurring Expenses
   Future<List<RecurringExpense>> getRecurringExpenses() => (select(recurringExpenses)..orderBy([(t) => OrderingTerm.asc(t.nextDueDate)])).get();
   Future<int> addRecurringExpense(RecurringExpensesCompanion entry) => into(recurringExpenses).insert(entry);
   Future<void> updateRecurringExpense(RecurringExpensesCompanion entry) => update(recurringExpenses).replace(entry);
@@ -512,7 +452,6 @@ class RecurringDao extends DatabaseAccessor<AppDb> with _$RecurringDaoMixin {
   Future<void> updateRecurringExpenseDate(int id, DateTime newDate) async {
     await (update(recurringExpenses)..where((t) => t.id.equals(id))).write(RecurringExpensesCompanion(nextDueDate: Value(newDate)));
   }
-  // Recurring Incomes
   Future<List<RecurringIncome>> getRecurringIncomes() => (select(recurringIncomes)..orderBy([(t) => OrderingTerm.asc(t.nextDueDate)])).get();
   Future<int> addRecurringIncome(RecurringIncomesCompanion entry) => into(recurringIncomes).insert(entry);
   Future<void> updateRecurringIncome(RecurringIncomesCompanion entry) => update(recurringIncomes).replace(entry);
@@ -520,7 +459,6 @@ class RecurringDao extends DatabaseAccessor<AppDb> with _$RecurringDaoMixin {
   Future<void> updateRecurringIncomeDate(int id, DateTime newDate) async {
     await (update(recurringIncomes)..where((t) => t.id.equals(id))).write(RecurringIncomesCompanion(nextDueDate: Value(newDate)));
   }
-  // Mappings
   Future<List<ProductMapping>> getAllMappings() => select(productMappings).get();
   Future<void> addMapping(ProductMappingsCompanion entry) => into(productMappings).insert(entry, mode: InsertMode.insertOrReplace);
 }

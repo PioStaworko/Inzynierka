@@ -1,5 +1,3 @@
-// lib/screens/scan_receipt_screen.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
@@ -75,14 +73,11 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
     });
 
     try {
-      // Preprocess image first (resize/grayscale/etc.) to improve OCR
       File imageToUse = _imageFile!;
       try {
         final pre = await _preprocessImage(_imageFile!);
         if (pre != null) imageToUse = pre;
-      } catch (_) {
-        // If preprocessing fails, fallback to original file
-      }
+      } catch (_) {}
 
       final inputImage = InputImage.fromFile(imageToUse);
       final recognizedText = await _textRecognizer.processImage(inputImage);
@@ -102,31 +97,23 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
     }
   }
 
-  // Simple preprocessing: decode, resize if large, convert to grayscale and
-  // save to temporary file. Keep this conservative to avoid heavy CPU use.
   Future<File?> _preprocessImage(File input) async {
     try {
       final bytes = await input.readAsBytes();
       img.Image? image = img.decodeImage(bytes);
       if (image == null) return null;
 
-      // Resize if too large to reduce OCR time and memory
       const int maxDim = 1600;
       if (image.width > maxDim) {
         image = img.copyResize(image, width: maxDim);
       }
 
-      // Convert to grayscale to reduce noise for OCR
       image = img.grayscale(image);
 
-      // A gentle contrast adjustment can help; keep it small
       try {
         image = img.adjustColor(image, contrast: 1.08);
-      } catch (_) {
-        // ignore if adjustColor not available on older package versions
-      }
+      } catch (_) {}
 
-      // Use explicit JpegEncoder for compatibility with different package versions
       final jpg = img.JpegEncoder(quality: 90).encode(image!);
       final tempDir = await getTemporaryDirectory();
       final outFile = File('${tempDir.path}/preprocessed_${DateTime.now().millisecondsSinceEpoch}.jpg');
@@ -209,7 +196,6 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
                               ),
                               const SizedBox(height: 8),
                               
-                              // === PODGLĄD TEKSTU ===
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
                                 child: Text(
@@ -240,7 +226,6 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
                                   );
                                 },
                               ),
-                              // ======================
 
                               const SizedBox(height: 24),
                               SizedBox(

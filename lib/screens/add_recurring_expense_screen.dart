@@ -1,5 +1,3 @@
-// lib/screens/add_recurring_expense_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -34,7 +32,6 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
       _titleController = TextEditingController(text: e.title);
       _amountController = TextEditingController(text: e.amount.toString());
       _selectedDate = e.nextDueDate;
-      // Resolve category id -> name using CategoryProvider
       try {
         final catProv = Provider.of<CategoryProvider>(context, listen: false);
         _selectedCategory = catProv.getNameForId(e.categoryId);
@@ -57,7 +54,6 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
   }
 
   Future<void> _presentDatePicker() async {
-     // ... standardowy date picker ...
      final now = DateTime.now();
      final pickedDate = await showDatePicker(context: context, initialDate: _selectedDate ?? now, firstDate: now, lastDate: DateTime(now.year + 5));
      if(pickedDate != null) setState(() => _selectedDate = pickedDate);
@@ -126,7 +122,6 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
                 onChanged: (val) => setState(() => _selectedFrequency = val!),
               ),
 
-              // ... Data i Przycisk (standardowo) ...
               const SizedBox(height: 16),
               Row(children: [Text(_selectedDate == null ? 'Brak daty' : DateFormat('dd.MM.yyyy').format(_selectedDate!)), IconButton(icon: Icon(Icons.calendar_month), onPressed: _presentDatePicker)]),
               ElevatedButton(onPressed: _submitData, child: Text('Zapisz')),

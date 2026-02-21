@@ -1,18 +1,14 @@
-// lib/screens/add_expense_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:drift/drift.dart' as drift;
 import '../providers/category_provider.dart';
 
-// IMPORT KLAS DRIFT (Zamiast ../models/expense_model.dart)
 import '../data/app_database.dart'; 
 import '../providers/expenses_provider.dart';
 import '../widgets/category_selector.dart';
 
 class AddExpenseScreen extends StatefulWidget {
-  // Używamy klasy 'Expense' wygenerowanej przez Drift
   final Expense? expenseToEdit;
 
   const AddExpenseScreen({super.key, this.expenseToEdit});
@@ -27,9 +23,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   late TextEditingController _amountController;
   
   DateTime? _selectedDate;
-  String _selectedCategory = 'Inne'; // Domyślna kategoria
+  String _selectedCategory = 'Inne';
   bool _isSaving = false;
-  // Editable product lines for receipts
   List<_EditableItem> _items = [];
 
   @override
@@ -40,14 +35,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       _titleController = TextEditingController(text: e.title);
       _amountController = TextEditingController(text: e.amount.toString());
       _selectedDate = e.date;
-      // Resolve category name from id using CategoryProvider
       try {
         final catProv = Provider.of<CategoryProvider>(context, listen: false);
         _selectedCategory = catProv.getNameForId(e.categoryId);
       } catch (_) {
         _selectedCategory = 'Inne';
       }
-      // Load items for this expense if present in ExpensesState
       WidgetsBinding.instance.addPostFrameCallback((_) {
         try {
           final expState = Provider.of<ExpensesState>(context, listen: false);
@@ -150,9 +143,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     setState(() => _isSaving = true);
 
     if (widget.expenseToEdit != null) {
-      // EDYCJA
-      // Tworzymy zmodyfikowany obiekt Expense (Drift generuje metodę copyWith)
-      // Resolve selected category name to id (create category if missing)
       final catProv = Provider.of<CategoryProvider>(context, listen: false);
       int? selectedId;
       try {
@@ -168,7 +158,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         date: _selectedDate!,
         categoryId: drift.Value(selectedId),
       );
-      // Map editable items to Drift companions
       final companions = _items.map((it) => ExpenseItemsCompanion.insert(
         expenseId: 0,
         name: it.name,
@@ -178,9 +167,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
       await provider.updateExpenseWithItems(updatedExpense, companions);
     } else {
-      // DODAWANIE
-      // Provider używa teraz nazwanych argumentów
-      // Map any manual items to companions
       final companions = _items.map((it) => ExpenseItemsCompanion.insert(
         expenseId: 0,
         name: it.name,
@@ -228,8 +214,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               ),
               const SizedBox(height: 16),
               
-              // SELEKTOR KATEGORII
-              // UWAGA: CategorySelector musi być przystosowany do Stringów
               CategorySelector(
                 type: 'expense', // String zamiast Enum (zgodnie z bazą)
                 initialValue: _selectedCategory,
@@ -241,7 +225,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               ),
               
               const SizedBox(height: 16),
-              // Manual product lines (for receipts) - visible for both add and edit
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
@@ -296,7 +279,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                             initialValue: it.categoryName ?? 'Inne',
                                             onChanged: (val) async {
                                               it.categoryName = val;
-                                              // resolve id if possible
                                               try {
                                                 final catProv = Provider.of<CategoryProvider>(context, listen: false);
                                                 it.categoryId = catProv.expenseCategories.firstWhere((c) => c.name == val).id;

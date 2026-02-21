@@ -21,11 +21,9 @@ class IncomeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // === LOGIKA GENEROWANIA ===
   Future<void> _generateRecurringIncomes() async {
     final now = DateTime.now();
     
-    // Pobieramy szablony z bazy (RecurringDao)
     final templates = await recurringDao.getRecurringIncomes();
     
     final newIncomes = <IncomesCompanion>[];
@@ -34,17 +32,13 @@ class IncomeProvider extends ChangeNotifier {
       var currentDueDate = template.nextDueDate;
       bool changed = false;
 
-      // Pętla: dopóki data płatności jest w przeszłości lub dzisiaj
       while (currentDueDate.isBefore(now) || currentDueDate.isAtSameMomentAs(now)) {
-        // Tworzymy nowy przychód (IncomesCompanion)
         newIncomes.add(IncomesCompanion.insert(
           title: template.title,
           amount: template.amount,
           date: currentDueDate,
         ));
 
-        // Obliczamy następną datę (prosta logika miesięczna - tu można rozbudować o frequency)
-        // Zakładam, że Frequency to String 'monthly', 'weekly' itd.
         if (template.frequency == 'monthly') {
            currentDueDate = DateTime(currentDueDate.year, currentDueDate.month + 1, currentDueDate.day);
         } else if (template.frequency == 'weekly') {
@@ -54,20 +48,17 @@ class IncomeProvider extends ChangeNotifier {
         } else if (template.frequency == 'yearly') {
            currentDueDate = DateTime(currentDueDate.year + 1, currentDueDate.month, currentDueDate.day);
         } else {
-           // Fallback - domyślnie miesiąc
            currentDueDate = DateTime(currentDueDate.year, currentDueDate.month + 1, currentDueDate.day);
         }
         
         changed = true;
       }
 
-      // Jeśli wygenerowano nowe, aktualizujemy datę w szablonie
       if (changed) {
         await recurringDao.updateRecurringIncomeDate(template.id, currentDueDate);
       }
     }
 
-    // Zapisujemy batchowo nowe przychody
     if (newIncomes.isNotEmpty) {
       await incomesDao.addBatchIncomes(newIncomes);
       _loadIncomes();
@@ -80,7 +71,6 @@ class IncomeProvider extends ChangeNotifier {
     return _incomes.fold(0.0, (sum, item) => sum + item.amount);
   }
 
-  // Dodawanie pojedynczego przychodu
   Future<void> addIncome(String title, double amount, DateTime date) async {
     await incomesDao.addIncome(IncomesCompanion.insert(
       title: title,
@@ -90,7 +80,6 @@ class IncomeProvider extends ChangeNotifier {
     _loadIncomes();
   }
 
-  // Usuwanie
   Future<void> deleteIncome(int incomeId) async {
     await incomesDao.deleteIncome(incomeId);
     _loadIncomes();

@@ -1,5 +1,3 @@
-// lib/screens/add_recurring_income_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -50,7 +48,6 @@ class _AddRecurringIncomeScreenState extends State<AddRecurringIncomeScreen> {
   }
 
   Future<void> _presentDatePicker() async {
-     // ... standardowy date picker ...
      final now = DateTime.now();
      final pickedDate = await showDatePicker(context: context, initialDate: _selectedDate ?? now, firstDate: now, lastDate: DateTime(now.year + 5));
      if(pickedDate != null) setState(() => _selectedDate = pickedDate);
@@ -119,7 +116,6 @@ class _AddRecurringIncomeScreenState extends State<AddRecurringIncomeScreen> {
                 onChanged: (val) => setState(() => _selectedFrequency = val!),
               ),
 
-              // ... Data i Przycisk (standardowo) ...
               const SizedBox(height: 16),
               Row(children: [Text(_selectedDate == null ? 'Brak daty' : DateFormat('dd.MM.yyyy').format(_selectedDate!)), IconButton(icon: Icon(Icons.calendar_month), onPressed: _presentDatePicker)]),
               ElevatedButton(onPressed: _submitData, child: Text('Zapisz')),

@@ -1,5 +1,3 @@
-// lib/utils/receipt_parser.dart
-
 import 'dart:math';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 

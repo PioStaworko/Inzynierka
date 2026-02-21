@@ -1,5 +1,3 @@
-// lib/screens/recurring_expenses_list_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +9,6 @@ class RecurringExpensesListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Nasłuchujemy zmian w providerze
     final provider = context.watch<RecurringExpenseProvider>();
     final templates = provider.allTemplates;
 
@@ -38,14 +35,12 @@ class RecurringExpensesListScreen extends StatelessWidget {
                     child: const Icon(Icons.delete, color: Colors.white),
                   ),
                   onDismissed: (direction) {
-                    // Wywołujemy usuwanie z providera
                     context
                         .read<RecurringExpenseProvider>()
                         .deleteRecurringExpense(template.id);
                   },
                   child: ListTile(
                     onTap: () {
-                      // OTWIERAMY EKRAN W TRYBIE EDYCJI
                       Navigator.push(
                         context,
                         MaterialPageRoute(

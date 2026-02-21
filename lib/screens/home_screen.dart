@@ -1,5 +1,3 @@
-// lib/screens/home_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -52,7 +50,6 @@ class _MyHomePageState extends State<MyHomePage> {
     final start = _rangeStart(range);
     final map = <String, double>{};
 
-    // expenseState.recent zawiera ExpenseWithItems (nagłówek + lista pozycji)
     for (final entry in expenseState.recent) {
       final exp = entry.expense;
       if (start != null && exp.date.isBefore(start)) continue;
@@ -69,9 +66,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     return map;
   }
-
-  // <--- ZMIANA: USUNIĘTO static const categoryColors.
-  // Nie potrzebujemy już sztywnej mapy, bo kolory są w bazie danych.
 
   void _showAddOptions(BuildContext context) {
     showModalBottomSheet(
@@ -135,7 +129,6 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     final expenseState = context.watch<ExpensesState>();
     final incomeState = context.watch<IncomeProvider>();
-    // <--- ZMIANA: Pobieramy CategoryProvider, aby mieć dostęp do kolorów
     final categoryProvider = context.watch<CategoryProvider>(); 
 
     final totals = _computeTotalsForRange(expenseState, _selectedRange, categoryProvider);
@@ -144,14 +137,11 @@ class _MyHomePageState extends State<MyHomePage> {
     final starting = context.watch<StartingBalanceProvider>().total;
     final balance = starting + totalIncomes - totalExpenses;
 
-    // === ŁĄCZENIE LIST I SORTOWANIE ===
-    // Zamieniamy ExpenseWithItems na Expense (nagłówek), żeby ułatwić renderowanie
     final List<dynamic> allTransactions = [
       ...expenseState.recent.map((e) => e.expense),
       ...incomeState.allIncomes,
     ];
     allTransactions.sort((a, b) => b.date.compareTo(a.date));
-    // ==================================
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mój Budżet')),
@@ -160,7 +150,6 @@ class _MyHomePageState extends State<MyHomePage> {
         padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
-            // Karta Salda
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -196,7 +185,6 @@ class _MyHomePageState extends State<MyHomePage> {
             Expanded(
               child: ListView(
                 children: [
-                  // WYKRES SŁUPKOWY
                   MonthlyBarChart(
                     expenses: expenseState.recent,
                     incomes: incomeState.allIncomes,
@@ -204,7 +192,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   
                   const SizedBox(height: 12),
 
-                  // WYKRES KOŁOWY (Kategorie wydatków)
+
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
@@ -212,7 +200,6 @@ class _MyHomePageState extends State<MyHomePage> {
                         children: [
                           const Text('Koszty według kategorii', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 8),
-                          // Time range selector
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -242,9 +229,6 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: Center(
                               child: PieChartWidget(
                                 data: totals,
-                                // <--- ZMIANA: Przekazujemy pustą mapę lub mapujemy kolory tutaj.
-                                // Ale PieChartWidget oczekuje Map<String, Color>.
-                                // Najprościej jest zbudować tę mapę dynamicznie:
                                 colors: Map.fromEntries(
                                   totals.keys.map((k) => MapEntry(
                                     k,
@@ -256,12 +240,10 @@ class _MyHomePageState extends State<MyHomePage> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          // CHIPY (LEGENDA)
                           Wrap(
                             spacing: 8,
                             runSpacing: 4,
                             children: totals.keys.map((k) {
-                              // <--- ZMIANA: Pobieramy kolor z Providera, zamiast ze stałej mapy
                               final c = categoryProvider.getColorFor(k, 'expense');
                               return Chip(
                                 avatar: CircleAvatar(backgroundColor: c),
@@ -276,7 +258,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                   const SizedBox(height: 12),
 
-                  // LISTA TRANSAKCJI
+
                   Card(
                     child: Column(
                       children: [
@@ -312,7 +294,6 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ),
                               );
                             } else if (item is Expense) {
-                              // <--- ZMIANA: Pobieramy kolor z Providera dla wydatku
                               final color = (item.categoryId != null) ? categoryProvider.getColorForId(item.categoryId) : categoryProvider.getColorFor('Inne', 'expense');
                               
                               return Dismissible(

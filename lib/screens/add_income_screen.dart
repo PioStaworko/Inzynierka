@@ -1,5 +1,3 @@
-// lib/screens/add_income_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -66,13 +64,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
     final provider = context.read<IncomeProvider>();
 
-    // Ponieważ klasa Income z Drifta nie ma copyWith (bo jest prostą tabelą bez relacji w tym kontekście),
-    // musimy stworzyć nowy obiekt lub użyć metody providera
     if (widget.incomeToEdit != null) {
-        // Tutaj provider.updateIncome oczekuje prawdopodobnie ID
-        // Ale w IncomeProvider nie mieliśmy metody update. Możesz ją dodać w Providerze
-        // albo usunąć i dodać nowy. 
-        // Uprośćmy: usuwamy stary i dodajemy nowy (mała oszukaństwo, ale działa)
         await provider.deleteIncome(widget.incomeToEdit!.id); 
         await provider.addIncome(
           _titleController.text,
@@ -92,8 +84,6 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ... UI (Skopiuj z poprzedniego pliku AddIncomeScreen, zmieniając tylko logikę w _submitData)
-    // Zwracam uwagę, że UI jest prawie identyczne jak w AddExpenseScreen, tylko bez kategorii
     return Scaffold(
        appBar: AppBar(title: const Text('Dodaj przychód')),
        body: Padding(
@@ -104,7 +94,6 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
               children: [
                  TextFormField(controller: _titleController, decoration: const InputDecoration(labelText: 'Tytuł')),
                  TextFormField(controller: _amountController, decoration: const InputDecoration(labelText: 'Kwota'), keyboardType: TextInputType.number),
-                 // ... Data Picker i Przycisk Zapisz ...
                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,

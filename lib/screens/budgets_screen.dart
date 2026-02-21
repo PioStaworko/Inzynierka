@@ -1,5 +1,3 @@
-// lib/screens/budget_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:drift/drift.dart' as drift;
@@ -63,7 +61,6 @@ class _BudgetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Kolor paska zależny od procentu (zielony -> żółty -> czerwony)
     Color progressColor = Colors.green;
     if (item.progress >= 1.0) progressColor = Colors.red;
     else if (item.progress >= 0.8) progressColor = Colors.orange;
@@ -79,7 +76,6 @@ class _BudgetCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  // Resolve categoryId -> name
                   Provider.of<CategoryProvider>(context, listen: false).getNameForId(item.budget.categoryId),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
@@ -128,7 +124,6 @@ class _BudgetCard extends StatelessWidget {
   }
 }
 
-// Formularz dodawania w osobnym widgecie
 class AddBudgetSheet extends StatefulWidget {
   const AddBudgetSheet({super.key});
 
@@ -190,7 +185,6 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                 final amount = double.tryParse(_amountController.text);
                 if (amount != null && amount > 0) {
                   final dao = context.read<AppDb>().budgetsDao;
-                  // Resolve selected category name -> id (create if missing)
                   final catProv = Provider.of<CategoryProvider>(context, listen: false);
                   int? cid;
                   try {

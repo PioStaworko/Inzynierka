@@ -4,7 +4,7 @@ import 'package:drift/drift.dart';
 class Categories extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 50).unique()();
-  TextColumn get type => text()(); // 'expense' lub 'income'
+  TextColumn get type => text()(); 
   IntColumn get colorValue => integer()();
 }
 
@@ -15,19 +15,19 @@ class Expenses extends Table {
   RealColumn get amount => real()();
   DateTimeColumn get date => dateTime()();
   
-  // Relacja do kategorii
+ 
   IntColumn get categoryId => integer().nullable().references(Categories, #id)();
 }
 
 // Tabela Pozycji (Szczegóły paragonu)
 class ExpenseItems extends Table {
   IntColumn get id => integer().autoIncrement()();
-  // Kaskadowe usuwanie: usunięcie wydatku usuwa jego pozycje
+  
   IntColumn get expenseId => integer().references(Expenses, #id, onDelete: KeyAction.cascade)(); 
   TextColumn get name => text()();
   RealColumn get amount => real()();
   
-  // Każda pozycja może mieć własną kategorię
+  
   IntColumn get categoryId => integer().nullable().references(Categories, #id)();
 }
 
@@ -42,10 +42,10 @@ class Incomes extends Table {
 // Tabela Mapowania Produktów (OCR Learning)
 class ProductMappings extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get rawId => text().unique()(); // Surowy tekst z paragonu
-  TextColumn get knownName => text()();      // Ładna nazwa
+  TextColumn get rawId => text().unique()(); 
+  TextColumn get knownName => text()();     
   
-  // Tylko ID (Normalizacja)
+  
   IntColumn get defaultCategoryId => integer().nullable().references(Categories, #id, onDelete: KeyAction.setNull)();
 }
 
@@ -55,7 +55,7 @@ class RecurringExpenses extends Table {
   TextColumn get title => text()();
   RealColumn get amount => real()();
   
-  // Tylko ID (Normalizacja)
+  
   IntColumn get categoryId => integer().nullable().references(Categories, #id, onDelete: KeyAction.setNull)();
   TextColumn get frequency => text()();
   DateTimeColumn get nextDueDate => dateTime()();
@@ -75,7 +75,7 @@ class RecurringIncomes extends Table {
 class Budgets extends Table {
   IntColumn get id => integer().autoIncrement()();
   
-  // Tylko ID (Normalizacja)
+  
   IntColumn get categoryId => integer().nullable().references(Categories, #id, onDelete: KeyAction.setNull)();
   
   RealColumn get amountLimit => real()();

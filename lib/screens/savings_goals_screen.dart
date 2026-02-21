@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/savings_goals_provider.dart';
-import '../data/app_database.dart';
 
 class SavingsGoalsScreen extends StatefulWidget {
   const SavingsGoalsScreen({super.key});
@@ -33,15 +32,9 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
                         final g = goals[i];
                         final prog = g.progress;
                         
-                        // Używamy savedAmount (netto)
                         final currentSaved = g.savedAmount;
                         final target = g.goal.targetAmount;
-                        final remaining = (target - currentSaved).clamp(0.0, double.infinity);
 
-                        // Kolor paska:
-                        // Czerwony jeśli jesteśmy na minusie (wydaliśmy więcej niż zarobiliśmy w tym okresie)
-                        // Zielony standardowo
-                        // Złoty jeśli cel osiągnięty
                         Color progressColor = Colors.green;
                         if (currentSaved < 0) progressColor = Colors.red;
                         else if (currentSaved >= target) progressColor = Colors.amber;
@@ -71,7 +64,6 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 
-                                // Pasek postępu
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: LinearProgressIndicator(
@@ -83,7 +75,6 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 
-                                // Szczegóły kwotowe
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
@@ -104,7 +95,6 @@ class _SavingsGoalsScreenState extends State<SavingsGoalsScreen> {
                                           ),
                                       ],
                                     ),
-                                    // Przycisk usuwania
                                     IconButton(
                                       icon: const Icon(Icons.delete, color: Colors.grey),
                                       onPressed: () => provider.deleteGoal(g.goal.id),

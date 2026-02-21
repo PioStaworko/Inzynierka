@@ -1,80 +1,202 @@
-// lib/widgets/pie_chart_widget.dart
-
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 
-class PieChartWidget extends StatelessWidget {
+/// Pie chart widget using `fl_chart` with grouping and simple interactivity.
+class PieChartWidget extends StatefulWidget {
   final Map<String, double> data;
   final Map<String, Color> colors;
   final double size;
+  /// Max number of categories to show separately (rest will be grouped into 'Inne')
+  final int maxSections;
 
   const PieChartWidget({
     super.key,
     required this.data,
     required this.colors,
     this.size = 150,
+    this.maxSections = 8,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: PieChartPainter(data, colors, Theme.of(context).colorScheme.surface),
-    );
-  }
+  State<PieChartWidget> createState() => _PieChartWidgetState();
 }
 
-class PieChartPainter extends CustomPainter {
-  final Map<String, double> data;
-  final Map<String, Color> colors;
-  final Color backgroundColor;
-
-  PieChartPainter(this.data, this.colors, this.backgroundColor);
+class _PieChartWidgetState extends State<PieChartWidget> {
+  int? _touchedIndex;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final total = data.values.fold(0.0, (a, b) => a + b);
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = min(size.width, size.height) / 2;
-
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    double startAngle = -pi / 2;
+  Widget build(BuildContext context) {
+    final total = widget.data.values.fold(0.0, (a, b) => a + b);
 
     if (total <= 0) {
-      final paint = Paint()..color = Colors.grey.shade300;
-      canvas.drawCircle(center, radius, paint);
-      final tp = TextPainter(
-        text: const TextSpan(text: 'Brak', style: TextStyle(color: Colors.black54, fontSize: 14)),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
-      return;
+      return SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: Center(
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.grey.shade300),
+            child: const Center(child: Text('Brak', style: TextStyle(color: Colors.black54))),
+          ),
+        ),
+      );
     }
 
-    data.forEach((key, value) {
-      final sweep = (value / total) * 2 * pi;
-      final paint = Paint()
-        ..style = PaintingStyle.fill
-        ..color = colors[key] ?? Colors.grey;
-      canvas.drawArc(rect, startAngle, sweep, true, paint);
-      startAngle += sweep;
-    });
+    final entries = widget.data.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final top = entries.take(widget.maxSections).toList();
+    final rest = entries.skip(widget.maxSections).toList();
+    final otherValue = rest.fold(0.0, (s, e) => s + e.value);
 
-    final holePaint = Paint()..color = backgroundColor;
-    canvas.drawCircle(center, radius * 0.5, holePaint);
+    final shown = List<MapEntry<String, double>>.from(top);
+    if (otherValue > 0) shown.add(MapEntry('Inne', otherValue));
 
-    final totalText = TextPainter(
-      text: TextSpan(
-        text: '${total.toStringAsFixed(0)} zł',
-        style: TextStyle(color: Colors.black87, fontSize: radius * 0.18, fontWeight: FontWeight.w600),
+    final sections = <PieChartSectionData>[];
+    for (var i = 0; i < shown.length; i++) {
+      final e = shown[i];
+      final color = widget.colors[e.key] ?? (e.key == 'Inne' ? Colors.grey : Colors.primaries[i % Colors.primaries.length]);
+      final isTouched = _touchedIndex == i;
+
+      sections.add(PieChartSectionData(
+        value: e.value,
+        color: color,
+        radius: isTouched ? widget.size * 0.3 : widget.size * 0.22,
+        title: '',
+        showTitle: false,
+      ));
+    }
+
+    return SizedBox(
+      width: widget.size,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: widget.size,
+            height: widget.size,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                PieChart(
+                  PieChartData(
+                    sections: sections,
+                    centerSpaceRadius: widget.size * 0.35,
+                    sectionsSpace: 2,
+                    startDegreeOffset: -90,
+                    borderData: FlBorderData(show: false),
+                    pieTouchData: PieTouchData(
+                      touchCallback: (event, response) {
+                        if (response == null || response.touchedSection == null) {
+                          setState(() => _touchedIndex = null);
+                          return;
+                        }
+                        final idx = response.touchedSection!.touchedSectionIndex;
+                        if (idx < 0 || idx >= shown.length) {
+                          setState(() => _touchedIndex = null);
+                          return;
+                        }
+                        setState(() => _touchedIndex = idx);
+                      },
+                    ),
+                  ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('${total.toStringAsFixed(0)} zł', style: const TextStyle(fontWeight: FontWeight.w600)),
+                    if (_touchedIndex != null)
+                      const SizedBox(height: 4),
+                    if (_touchedIndex != null && _touchedIndex! >= 0 && _touchedIndex! < shown.length)
+                      Builder(builder: (ctx) {
+                        final entry = shown[_touchedIndex!];
+                        final pct = (entry.value / total) * 100;
+                        return Text('${entry.key}: ${entry.value.toStringAsFixed(2)} zł • ${pct.toStringAsFixed(1)}%', style: TextStyle(fontSize: 11, color: Colors.grey[700]));
+                      }),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          _buildLegend(context, shown, entries.length > widget.maxSections, entries),
+        ],
       ),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: radius);
-    totalText.paint(canvas, center - Offset(totalText.width / 2, totalText.height / 2));
+    );
   }
 
-  @override
-  bool shouldRepaint(covariant PieChartPainter oldDelegate) {
-    return oldDelegate.data != data || oldDelegate.colors != colors;
+  Widget _buildLegend(BuildContext context, List<MapEntry<String, double>> shown, bool hasMore, List<MapEntry<String,double>> allEntries) {
+    return SizedBox(
+      height: 48,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              itemBuilder: (ctx, idx) {
+                final e = shown[idx];
+                final color = widget.colors[e.key] ?? (e.key == 'Inne' ? Colors.grey : Colors.primaries[idx % Colors.primaries.length]);
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(radius: 8, backgroundColor: color),
+                    const SizedBox(width: 6),
+                    Text('${e.key} (${e.value.toStringAsFixed(0)})', style: const TextStyle(fontSize: 12)),
+                  ],
+                );
+              },
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemCount: shown.length,
+            ),
+          ),
+          if (hasMore)
+            TextButton(
+              onPressed: () => _showAllCategoriesModal(context, allEntries),
+              child: const Text('Pokaż wszystkie'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showAllCategoriesModal(BuildContext context, List<MapEntry<String,double>> allEntries) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: SizedBox(
+            height: MediaQuery.of(ctx).size.height * 0.6,
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                const Text('Wszystkie kategorie', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: allEntries.length,
+                    separatorBuilder: (_, __) => const Divider(height: 8),
+                    itemBuilder: (ctx, i) {
+                      final e = allEntries[i];
+                      final color = widget.colors[e.key] ?? Colors.primaries[i % Colors.primaries.length];
+                      return ListTile(
+                        leading: CircleAvatar(backgroundColor: color),
+                        title: Text(e.key),
+                        trailing: Text(e.value.toStringAsFixed(2)),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

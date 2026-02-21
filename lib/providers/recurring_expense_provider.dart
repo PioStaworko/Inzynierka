@@ -18,9 +18,7 @@ class RecurringExpenseProvider extends ChangeNotifier {
 
   List<db.RecurringExpense> get allTemplates => List.unmodifiable(_templates);
 
-  // Dodawanie
   Future<void> addRecurringExpense(String title, double amount, String category, String frequency, DateTime nextDate) async {
-    // Resolve category name -> id (create if missing)
     final allCats = await categoriesDao.getAllCategories();
     db.Category? existing;
     try {
@@ -50,13 +48,11 @@ class RecurringExpenseProvider extends ChangeNotifier {
     _loadTemplates();
   }
 
-  // Usuwanie
   Future<void> deleteRecurringExpense(int templateId) async {
     await dao.deleteRecurringExpense(templateId);
     _loadTemplates();
   }
 
-  // Aktualizacja
   Future<void> updateRecurringExpenseByFields(int id, String title, double amount, String category, String frequency, DateTime nextDate) async {
     final allCats = await categoriesDao.getAllCategories();
     db.Category? existing;
